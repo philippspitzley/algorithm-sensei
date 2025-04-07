@@ -12,7 +12,7 @@ from app.api.deps import (
 )
 from app.core.security import get_password_hash, verify_password
 from app.models import (
-    Item,
+    Course,
     Message,
     UpdatePassword,
     User,
@@ -226,7 +226,7 @@ def delete_user(
             status_code=403,
             detail="Super users are not allowed to delete themselves",
         )
-    statement = delete(Item).where(col(Item.owner_id) == user_id)
+    statement = delete(Course).where(col(Course.owner_id) == user_id)
     session.exec(statement)  # type: ignore
     session.delete(user)
     session.commit()

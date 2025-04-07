@@ -6,18 +6,18 @@ from sqlmodel import func, select
 
 from app.api.deps import CurrentUser, SessionDep
 from app.models import (
-    Item,
-    ItemCreate,
-    ItemPublic,
-    ItemsPublic,
-    ItemUpdate,
+    Course,
+    CourseCreate,
+    CoursePublic,
+    CoursesPublic,
+    CourseUpdate,
     Message,
 )
 
 router = APIRouter(prefix="/items", tags=["items"])
 
 
-@router.get("/", response_model=ItemsPublic)
+@router.get("/", response_model=CoursesPublic)
 def read_items(
     session: SessionDep,
     current_user: CurrentUser,
@@ -29,36 +29,36 @@ def read_items(
     """
 
     if current_user.is_superuser:
-        count_statement = select(func.count()).select_from(Item)
+        count_statement = select(func.count()).select_from(Course)
         count = session.exec(count_statement).one()
-        statement = select(Item).offset(skip).limit(limit)
+        statement = select(Course).offset(skip).limit(limit)
         items = session.exec(statement).all()
     else:
         count_statement = (
             select(func.count())
-            .select_from(Item)
-            .where(Item.owner_id == current_user.id)
+            .select_from(Course)
+            .where(Course.owner_id == current_user.id)
         )
         count = session.exec(count_statement).one()
         statement = (
-            select(Item)
-            .where(Item.owner_id == current_user.id)
+            select(Course)
+            .where(Course.owner_id == current_user.id)
             .offset(skip)
             .limit(limit)
         )
         items = session.exec(statement).all()
 
-    return ItemsPublic(data=items, count=count)
+    return CoursesPublic(data=items, count=count)
 
 
-@router.get("/{item_id}", response_model=ItemPublic)
+@router.get("/{item_id}", response_model=CoursePublic)
 def read_item(
     session: SessionDep, current_user: CurrentUser, item_id: uuid.UUID
 ) -> Any:
     """
     Get item by ID.
     """
-    item = session.get(Item, item_id)
+    item = session.get(Course, item_id)
     if not item:
         raise HTTPException(
             status_code=404, detail=f"Item with id '{item_id}' not found"
@@ -68,32 +68,32 @@ def read_item(
     return item
 
 
-@router.post("/", response_model=ItemPublic)
+@router.post("/", response_model=CoursePublic)
 def create_item(
-    *, session: SessionDep, current_user: CurrentUser, item_in: ItemCreate
+    *, session: SessionDep, current_user: CurrentUser, item_in: CourseCreate
 ) -> Any:
     """
     Create new item.
     """
-    item = Item.model_validate(item_in, update={"owner_id": current_user.id})
+    item = Course.model_validate(item_in, update={"owner_id": current_user.id})
     session.add(item)
     session.commit()
     session.refresh(item)
     return item
 
 
-@router.put("/{item_id}", response_model=ItemPublic)
+@router.put("/{item_id}", response_model=CoursePublic)
 def update_item(
     *,
     session: SessionDep,
     current_user: CurrentUser,
     item_id: uuid.UUID,
-    item_in: ItemUpdate,
+    item_in: CourseUpdate,
 ) -> Any:
     """
     Update an item.
     """
-    item = session.get(Item, item_id)
+    item = session.get(Course, item_id)
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
     if not current_user.is_superuser and (item.owner_id != current_user.id):
@@ -113,7 +113,7 @@ def delete_item(
     """
     Delete an item.
     """
-    item = session.get(Item, item_id)
+    item = session.get(Course, item_id)
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
     if not current_user.is_superuser and (item.owner_id != current_user.id):

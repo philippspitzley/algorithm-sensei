@@ -1,0 +1,59 @@
+[project]
+name = "backend"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+  "alembic>=1.15.2",
+  "fastapi[standard]>=0.115.12",
+  "passlib[bcrypt]>=1.7.4",
+  "pre-commit>=4.2.0",
+  "psycopg>=3.2.6",
+  "psycopg2>=2.9.10",
+  "pydantic-settings>=2.8.1",
+  "pyjwt>=2.10.1",
+  "sqlmodel>=0.0.24",
+]
+
+[tool.ruff]
+# General settings
+target-version = "py311" # Match your Python version
+line-length = 88         # 88 (Black default) or 100/120 for wider lines
+respect-gitignore = true
+
+# Linting rulesets (autofixable + best practices)
+lint.select = [
+  "E",   # pycodestyle
+  "F",   # pyflakes
+  "I",   # isort
+  "B",   # flake8-bugbear
+  "UP",  # pyupgrade (use modern Python syntax)
+  "N",   # pep8-naming
+  "C4",  # flake8-comprehensions
+  "SIM", # flake8-simplify
+  "TID", # tidy imports
+  "A",   # builtins checks (e.g. avoid shadowing `id`, `list`, etc.)
+]
+
+lint.ignore = [
+  "E501", # Line length (handled by formatter)
+  "B904",
+  # "TID252",
+]
+
+# Optional: Exclude test files or migrations if needed
+exclude = ["app/alembic"]
+
+# Enable autofix for everything (used with `ruff check --fix`)
+fix = true
+# unsafe-fixes = true  # allows more aggressive changes (optional)
+
+
+[tool.ruff.format]
+# Formatter settings (Black-style)
+quote-style = "double"            # "single" or "double"
+indent-style = "space"
+line-ending = "lf"
+docstring-code-format = true
+skip-magic-trailing-comma = false

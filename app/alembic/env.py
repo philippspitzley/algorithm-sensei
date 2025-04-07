@@ -1,14 +1,17 @@
 from logging.config import fileConfig
+from app.core.config import settings
 
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
+
+db_url = str(settings.SQLALCHEMY_DATABASE_URI)
 config = context.config
 config.set_main_option(
     "sqlalchemy.url",
-    "postgresql://philipp@localhost:5432/algorithm-watch",
+    db_url,
 )
 
 # Interpret the config file for Python logging.

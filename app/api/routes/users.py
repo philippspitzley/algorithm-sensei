@@ -1,8 +1,8 @@
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import col, delete, func, select
+from fastapi import APIRouter, Depends
+from sqlmodel import func, select
 
 from app import crud
 from app.api.deps import (
@@ -20,7 +20,6 @@ from app.api.exceptions import (
 )
 from app.core.security import get_password_hash, verify_password
 from app.models import (
-    Course,
     Message,
     UpdatePassword,
     User,
@@ -238,14 +237,12 @@ def delete_user(
     """
     user = session.get(User, user_id)
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise ItemNotFoundError(item_id=user_id, item_name="User")
     if user == current_user:
-        raise HTTPException(
-            status_code=403,
+        raise PermissionDeniedError(
             detail="Super users are not allowed to delete themselves",
         )
-    statement = delete(Course).where(col(Course.owner_id) == user_id)
-    session.exec(statement)  # type: ignore
+
     session.delete(user)
     session.commit()
     return Message(message="User deleted successfully")

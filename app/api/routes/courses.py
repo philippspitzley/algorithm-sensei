@@ -32,7 +32,7 @@ def get_courses(
     limit = pagination_params["limit"]
 
     if include_count:
-        count_statement = select(func.count(Course.id))
+        count_statement = select(func.count()).select_from(Course)
         count = session.exec(count_statement).one()
     else:
         count = None
@@ -91,7 +91,7 @@ def update_course(
 
     if not course:
         raise ItemNotFoundError(item_id=course_id, item_name="Course")
-    if not current_user.is_superuser and (course.owner_id != current_user.id):
+    if not current_user.is_superuser:
         raise PermissionDeniedError()
 
     update_dict = item_in.model_dump(exclude_unset=True)

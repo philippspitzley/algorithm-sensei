@@ -6,8 +6,12 @@ from sqlmodel import Field, Relationship, SQLModel
 
 from app.models import TimeStampMixin
 
+from .chapters import (
+    ChapterPublic,  # must be imported above TYPE_CHECKING because Chapter and ChapterPublic are circular references from ChapterBase
+)
+
 if TYPE_CHECKING:
-    from .chapters import Chapter, ChapterPublic
+    from .chapters import Chapter
     from .user_courses import UserCourse
 
 
@@ -18,7 +22,7 @@ class CourseBase(SQLModel):
 
 
 # Database model
-class Course(TimeStampMixin, CourseBase, table="courses"):
+class Course(TimeStampMixin, CourseBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
 
     # Relationships
@@ -44,5 +48,5 @@ class CoursePublic(CourseBase):
 
 
 class CoursesPublic(SQLModel):
-    data: list[CoursePublic]
-    count: int
+    data: list["CoursePublic"]
+    count: int | None = Field(default=None, ge=0)

@@ -20,7 +20,7 @@ class UserBase(SQLModel):
 
 
 # Database model
-class User(TimeStampMixin, UserBase, table="users"):
+class User(TimeStampMixin, UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
 

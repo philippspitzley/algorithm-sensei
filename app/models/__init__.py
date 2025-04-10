@@ -1,5 +1,6 @@
-# Import and re-export all models to avoid circular imports
 __all__ = [
+    # SQLModel base class
+    "SQLModel",
     # Base
     "TimeStampMixin",
     # Chapter models
@@ -43,6 +44,10 @@ __all__ = [
     "Token",
     "TokenPayload",
 ]
+
+# Import and re-export all models to avoid circular imports
+from sqlmodel import SQLModel
+
 # Base
 from .base import TimeStampMixin
 
@@ -95,10 +100,3 @@ from .users import (
 
 # Utility models
 from .utils import Message, NewPassword, Token, TokenPayload
-
-# Update forward references
-User.model_rebuild()
-Course.model_rebuild()
-Chapter.model_rebuild()
-ChapterPoint.model_rebuild()
-UserCourse.model_rebuild()

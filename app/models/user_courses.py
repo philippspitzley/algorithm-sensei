@@ -29,7 +29,7 @@ class UserCourseBase(SQLModel):
 
 
 # Database model
-class UserCourse(TimeStampMixin, UserCourseBase, table="user_courses"):
+class UserCourse(TimeStampMixin, UserCourseBase, table=True):
     user_id: uuid.UUID = Field(foreign_key="user.id", nullable=False, primary_key=True)
     course_id: uuid.UUID = Field(
         foreign_key="course.id", nullable=False, primary_key=True

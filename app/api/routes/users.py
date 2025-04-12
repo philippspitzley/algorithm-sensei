@@ -188,6 +188,10 @@ def get_user_by_id(
     Get a specific user by id.
     """
     user = session.get(User, user_id)
+
+    if not user:
+        raise ItemNotFoundError(item_id=user_id, item_name="User")
+
     if user == current_user:
         return user
 

@@ -1,4 +1,3 @@
-import uuid
 from typing import Any
 
 from sqlmodel import Session, select
@@ -19,16 +18,19 @@ def create_user(*, session: Session, user_create: UserCreate) -> User:
 
 
 def update_user(*, session: Session, db_user: User, user_in: UserUpdate) -> Any:
-    user_data = user_in.model_dump(exclude_unset=True)
-    extra_data = {}
-    if "password" in user_data:
-        password = user_data["password"]
-        hashed_password = get_password_hash(password)
-        extra_data["hashed_password"] = hashed_password
-    db_user.sqlmodel_update(user_data, update=extra_data)
+    update_data = user_in.model_dump(exclude_unset=True)
+
+    if "password" in update_data:
+        password = update_data.pop("password")
+        if password:
+            db_user.hashed_password = get_password_hash(password)
+
+    db_user.sqlmodel_update(update_data)
+
     session.add(db_user)
     session.commit()
     session.refresh(db_user)
+
     return db_user
 
 
@@ -47,10 +49,8 @@ def authenticate(*, session: Session, email: str, password: str) -> User | None:
     return db_user
 
 
-def create_item(
-    *, session: Session, item_in: CourseCreate, owner_id: uuid.UUID
-) -> Course:
-    db_item = Course.model_validate(item_in, update={"owner_id": owner_id})
+def create_item(*, session: Session, item_in: CourseCreate) -> Course:
+    db_item = Course.model_validate(item_in)
     session.add(db_item)
     session.commit()
     session.refresh(db_item)

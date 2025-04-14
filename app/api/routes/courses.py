@@ -1,5 +1,4 @@
 import uuid
-from typing import Any
 
 from fastapi import APIRouter
 from sqlmodel import func, select
@@ -19,11 +18,12 @@ router = APIRouter(prefix="/courses", tags=["courses"])
 
 
 @router.get("/", response_model=CoursesPublic)
-def get_courses(
+async def get_courses(
+    *,
     session: SessionDep,
     pagination_params: PaginationParams,
     include_count: bool = False,
-) -> Any:
+) -> CoursesPublic:
     """
     Retrieve courses.
     """
@@ -45,25 +45,32 @@ def get_courses(
 
 
 @router.get("/{course_id}", response_model=CoursePublic)
-def get_course(session: SessionDep, course_id: uuid.UUID) -> Any:
+async def get_course(
+    session: SessionDep, course_id: uuid.UUID, include_chapters: bool = True
+) -> CoursePublic:
     """
     Get course by ID.
     """
+
     course = session.get(Course, course_id)
 
     if not course:
         raise ItemNotFoundError(item_id=course_id, item_name="Course")
 
-    return course
+    if not include_chapters:
+        course = course.model_dump(exclude={"chapters"})
+
+    return CoursePublic.model_validate(course)
 
 
 @router.post("/", response_model=CoursePublic)
-def create_course(
+async def create_course(
     *, session: SessionDep, current_user: CurrentUser, course_in: CourseCreate
-) -> Any:
+) -> CoursePublic:
     """
-    Create new item.
+    Create new course.
     """
+
     if not current_user.is_superuser:
         raise PermissionDeniedError()
 
@@ -73,17 +80,17 @@ def create_course(
     session.commit()
     session.refresh(course)
 
-    return course
+    return CoursePublic.model_validate(course)
 
 
-@router.put("/{course_id}", response_model=CoursePublic)
-def update_course(
+@router.patch("/{course_id}", response_model=CoursePublic)
+async def update_course(
     *,
     session: SessionDep,
     current_user: CurrentUser,
     course_id: uuid.UUID,
-    item_in: CourseUpdate,
-) -> Any:
+    course_in: CourseUpdate,
+) -> CoursePublic:
     """
     Update an course.
     """
@@ -94,18 +101,18 @@ def update_course(
     if not current_user.is_superuser:
         raise PermissionDeniedError()
 
-    update_dict = item_in.model_dump(exclude_unset=True)
+    update_dict = course_in.model_dump(exclude_unset=True)
     course.sqlmodel_update(update_dict)
 
     session.add(course)
     session.commit()
     session.refresh(course)
 
-    return course
+    return CoursePublic.model_validate(course)
 
 
 @router.delete("/{course_id}")
-def delete_course(
+async def delete_course(
     session: SessionDep, current_user: CurrentUser, course_id: uuid.UUID
 ) -> Message:
     """
@@ -121,4 +128,4 @@ def delete_course(
     session.delete(course)
     session.commit()
 
-    return Message(message="Course deleted successfully")
+    return Message(message="👋 Course deleted successfully")

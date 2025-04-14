@@ -1,8 +1,8 @@
 """initialize db
 
-Revision ID: 13dc025dd8e3
+Revision ID: d5f486e4d318
 Revises: 
-Create Date: 2025-04-10 11:06:17.759638
+Create Date: 2025-04-14 11:10:38.738074
 
 """
 from typing import Sequence, Union
@@ -10,10 +10,11 @@ from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
 import sqlmodel.sql.sqltypes
+from app.models.chapters import HttpUrlType
 
 
 # revision identifiers, used by Alembic.
-revision: str = '13dc025dd8e3'
+revision: str = 'd5f486e4d318'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -68,11 +69,11 @@ def upgrade() -> None:
     sa.UniqueConstraint('user_id', 'course_id', name='unique_user_course')
     )
     op.create_table('chapterpoint',
-    sa.Column('chapter_num', sa.Integer(), nullable=True),
+    sa.Column('chapter_point_num', sa.Integer(), nullable=True),
     sa.Column('text', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.Column('code_block', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
-    sa.Column('image', sa.String(length=255), nullable=True),
-    sa.Column('video', sa.String(length=255), nullable=True),
+    sa.Column('image', HttpUrlType(length=2083), nullable=True),
+    sa.Column('video', HttpUrlType(length=2083), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('updated_at', sa.DateTime(), nullable=False),
     sa.Column('id', sa.Uuid(), nullable=False),
@@ -93,7 +94,3 @@ def downgrade() -> None:
     op.drop_table('user')
     op.drop_table('course')
     # ### end Alembic commands ###
-
-    # Drop the enum that was created for status in usercourse, drop table does not remove enums
-    # psql command: "DROP TYPE IF EXISTS coursestatus CASCADE;"
-    sa.Enum(name='coursestatus').drop(op.get_bind(), checkfirst=True)

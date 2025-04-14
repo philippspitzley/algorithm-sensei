@@ -12,7 +12,9 @@ __all__ = [
     "ChapterPointCreate",
     "ChapterPointPublic",
     "ChapterPointUpdate",
+    "ChapterPointsPublic",
     "ChapterPublic",
+    "ChaptersPublic",
     "ChapterUpdate",
     # Course models
     "Course",
@@ -60,8 +62,10 @@ from .chapters import (
     ChapterPointBase,
     ChapterPointCreate,
     ChapterPointPublic,
+    ChapterPointsPublic,
     ChapterPointUpdate,
     ChapterPublic,
+    ChaptersPublic,
     ChapterUpdate,
 )
 

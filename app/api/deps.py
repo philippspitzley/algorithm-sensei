@@ -1,7 +1,5 @@
 from collections.abc import Generator
-from enum import Enum
-from typing import Annotated, Any, TypeVar
-from uuid import UUID
+from typing import Annotated, TypeVar
 
 import jwt
 from fastapi import Depends, HTTPException, Query, status
@@ -10,7 +8,7 @@ from jwt import InvalidTokenError
 from pydantic import ValidationError
 from sqlmodel import Session, SQLModel
 
-from app.api.exceptions import ItemNotFoundError, NotFoundError, PermissionDeniedError
+from app.api.exceptions import NotFoundError, PermissionDeniedError
 from app.core import security
 from app.core.config import settings
 from app.core.db import engine
@@ -82,59 +80,3 @@ def pagination_params(
 
 
 PaginationParams = Annotated[dict[str, int], Depends(pagination_params)]
-
-
-class ModelClassName(str, Enum):
-    User = "User"
-    Course = "Course"
-    Chapter = "Chapter"
-    # Add other model class names here as needed
-
-
-def get_item_with_permissions(model_class_name: ModelClassName):
-    """
-    Factory function that creates a dependency for retrieving an item by ID
-    with permission checking.
-
-    Args:
-        model_class_name: The name of the model class to use for retrieval
-    """
-
-    def _get_item(
-        session: SessionDep,
-        current_user: CurrentUser,
-        item_id: UUID,
-    ) -> Any:
-        # Import model class at runtime to avoid circular imports
-        from app.models import (
-            Chapter,
-            Course,
-        )  # Add other models as needed  # noqa: I001
-
-        # Map string names to actual classes
-        model_map: dict[str, type] = {
-            "Course": Course,
-            "Chapter": Chapter,
-            "User": User,
-            # Add other models here
-        }
-
-        model_class = model_map.get(model_class_name)
-        if not model_class:
-            raise ValueError(f"Unknown model class: {model_class_name}")
-
-        item = session.get(model_class, item_id)
-        if not item:
-            raise ItemNotFoundError(item_id=item_id, item_name=model_class_name)
-
-        # Check if item has owner_id attribute
-        if (
-            hasattr(item, "owner_id")
-            and not current_user.is_superuser
-            and item.owner_id != current_user.id
-        ):
-            raise PermissionDeniedError()
-
-        return item
-
-    return _get_item

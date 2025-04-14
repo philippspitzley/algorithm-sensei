@@ -7,6 +7,7 @@ requires-python = ">=3.13"
 dependencies = [
   "alembic>=1.15.2",
   "fastapi[standard]>=0.115.12",
+  "jwt>=1.3.1",
   "passlib[bcrypt]>=1.7.4",
   "pre-commit>=4.2.0",
   "psycopg>=3.2.6",
@@ -14,7 +15,6 @@ dependencies = [
   "pydantic-settings>=2.8.1",
   "pyjwt>=2.10.1",
   "sqlmodel>=0.0.24",
-  "types-pyjwt>=1.7.1",
 ]
 
 [tool.ruff]
@@ -58,3 +58,12 @@ indent-style = "space"
 line-ending = "lf"
 docstring-code-format = true
 skip-magic-trailing-comma = false
+
+[tool.pyright]
+# ... other settings ...
+exclude = [
+  ".venv",
+  "app/alembic/versions/", # Or exclude a specific file
+]
+typeCheckingMode = "strict"
+deprecateTypingAliases = true

@@ -44,9 +44,9 @@ class CourseUpdate(CourseBase):
 # OUTPUT: Properties to return via API
 class CoursePublic(CourseBase):
     id: uuid.UUID
-    chapters: list["ChapterPublic"] | None
+    chapters: list["ChapterPublic"] = Field(default_factory=list)
 
 
 class CoursesPublic(SQLModel):
-    data: list["CoursePublic"]
+    data: list["CoursePublic"] = Field(default_factory=list)
     count: int | None = Field(default=None, ge=0)

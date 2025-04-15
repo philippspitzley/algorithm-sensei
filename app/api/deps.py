@@ -54,12 +54,17 @@ def get_current_user(session: SessionDep, token: TokenDep) -> User:
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
+UserRequired = Depends(get_current_user)
 
 
 def get_current_active_superuser(current_user: CurrentUser) -> User:
     if not current_user.is_superuser:
         raise PermissionDeniedError()
     return current_user
+
+
+CurrentSuperUser = Annotated[User, Depends(get_current_active_superuser)]
+SuperUserRequired = Depends(get_current_active_superuser)
 
 
 def pagination_params(

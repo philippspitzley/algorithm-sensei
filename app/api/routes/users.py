@@ -1,7 +1,6 @@
 import uuid
-from typing import Any
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from sqlmodel import func, select
 
 from app import crud
@@ -9,7 +8,7 @@ from app.api.deps import (
     CurrentUser,
     PaginationParams,
     SessionDep,
-    get_current_active_superuser,
+    SuperUserRequired,
 )
 from app.api.exceptions import (
     EmailValidationError,
@@ -30,6 +29,8 @@ from app.models import (
     UserUpdate,
     UserUpdateMe,
 )
+from app.models.courses import Course
+from app.models.user_courses import UserCourse, UserCourseCreate, UserCourseUpdate
 
 # uncomment next two lines for email support
 # from app.utils import generate_new_account_email, send_email
@@ -38,12 +39,182 @@ from app.models import (
 router = APIRouter(prefix="/users", tags=["users"])
 
 
+@router.post("/signup", response_model=UserPublic)
+async def register_user(session: SessionDep, user_in: UserRegister) -> UserPublic:
+    """
+    Create new user without the need to be logged in.
+    """
+
+    user = crud.get_user_by_email(session=session, email=user_in.email)
+
+    if user:
+        raise EmailValidationError(detail=f"Email '{user_in.email}' already exists")
+
+    user_create = UserCreate.model_validate(user_in)
+    user = crud.create_user(session=session, user_create=user_create)
+
+    return UserPublic.model_validate(user)
+
+
+@router.get("/me", response_model=UserPublic)
+async def read_user_me(current_user: CurrentUser) -> UserPublic:
+    """
+    Get current user.
+    """
+
+    return UserPublic.model_validate(current_user)
+
+
+@router.patch("/me", response_model=UserPublic)
+async def update_user_me(
+    *, session: SessionDep, user_in: UserUpdateMe, current_user: CurrentUser
+) -> UserPublic:
+    """
+    Update own user.
+    """
+
+    if user_in.email:
+        existing_user = crud.get_user_by_email(session=session, email=user_in.email)
+        if existing_user and existing_user.id != current_user.id:
+            raise ItemAlreadyExistsError(item_name=user_in.email)
+
+    user_data = user_in.model_dump(exclude_unset=True)
+    current_user.sqlmodel_update(user_data)
+
+    session.add(current_user)
+    session.commit()
+    session.refresh(current_user)
+
+    return UserPublic.model_validate(current_user)
+
+
+@router.patch("/me/password", response_model=Message)
+async def update_password_me(
+    *, session: SessionDep, password_in: UpdatePassword, current_user: CurrentUser
+) -> Message:
+    """
+    Update own password.
+    """
+
+    if not verify_password(password_in.current_password, current_user.hashed_password):
+        raise PasswordValidationError(
+            "Incorrect password. Make sure your current password is correct."
+        )
+    if password_in.current_password == password_in.new_password:
+        raise PasswordValidationError(
+            "New password cannot be the same as the current one"
+        )
+
+    hashed_password = get_password_hash(password_in.new_password)
+    current_user.hashed_password = hashed_password
+
+    session.add(current_user)
+    session.commit()
+    return Message(message="🔐 Password successfully updated ")
+
+
+@router.delete("/me", response_model=Message)
+async def delete_user_me(session: SessionDep, current_user: CurrentUser) -> Message:
+    """
+    Delete own user.
+    """
+
+    if current_user.is_superuser:
+        raise PermissionDeniedError(
+            detail="Super users are not allowed to delete themselves",
+        )
+    session.delete(current_user)
+    session.commit()
+
+    return Message(message="👋 User deleted successfully")
+
+
+@router.get("/me/courses", response_model=list[UserCourse])
+async def get_my_courses(
+    *, session: SessionDep, current_user: CurrentUser
+) -> list[UserCourse]:
+    """
+    Get enrolled courses.
+    """
+
+    statement = select(UserCourse).where(current_user.id == UserCourse.user_id)
+    user_courses = session.exec(statement).all()
+
+    return list(user_courses)
+
+
+@router.post("/me/courses/{course_id}", response_model=UserCourse)
+async def enroll_course(
+    *,
+    session: SessionDep,
+    current_user: CurrentUser,
+    course_id: uuid.UUID,
+) -> UserCourse:
+    """
+    Enroll new course.
+    """
+
+    # check if course exists
+    course = session.get(Course, course_id)
+    if not course:
+        raise ItemNotFoundError(item_id=course_id, item_name="Course")
+
+    # check if course already in UserCourse
+    statement = select(UserCourse).where(UserCourse.course_id == course_id)
+    user_course_exists = session.exec(statement).first()
+    if user_course_exists:
+        raise ItemAlreadyExistsError(item_name="User course")
+
+    user_course_in = UserCourseCreate(user_id=current_user.id, course_id=course_id)
+    user_course = UserCourse.model_validate(user_course_in)
+
+    session.add(user_course)
+    session.commit()
+    session.refresh(user_course)
+
+    return user_course
+
+
+@router.patch("/me/courses/{course_id}", response_model=UserCourse)
+async def update_my_course(
+    *,
+    session: SessionDep,
+    current_user: CurrentUser,
+    course_id: uuid.UUID,
+    user_course_in: UserCourseUpdate,
+) -> UserCourse:
+    """
+    Update own course.
+    """
+
+    user_course = session.get(
+        UserCourse, {"user_id": current_user.id, "course_id": course_id}
+    )
+    if not user_course:
+        raise ItemNotFoundError(item_id=course_id, item_name="User course")
+
+    # if user_course_in.finished_chapters:
+    #     concatenated_finished_chapters = list(
+    #         set(user_course_in.finished_chapters) | set(user_course.finished_chapters)
+    #     )
+    #     user_course_in.finished_chapters = concatenated_finished_chapters
+
+    user_course_update = user_course_in.model_dump(exclude_unset=True)
+    user_course.sqlmodel_update(user_course_update)
+
+    session.add(user_course)
+    session.commit()
+    session.refresh(user_course)
+
+    return user_course
+
+
 @router.get(
     "/",
-    dependencies=[Depends(get_current_active_superuser)],
+    dependencies=[SuperUserRequired],
     response_model=UsersPublic,
 )
-def get_users(
+async def get_users(
     session: SessionDep,
     pagination_params: PaginationParams,
     include_count: bool = False,
@@ -51,6 +222,7 @@ def get_users(
     """
     Retrieve users.
     """
+
     skip = pagination_params["skip"]
     limit = pagination_params["limit"]
 
@@ -69,13 +241,14 @@ def get_users(
 
 @router.post(
     "/",
-    dependencies=[Depends(get_current_active_superuser)],
+    dependencies=[SuperUserRequired],
     response_model=UserPublic,
 )
-def create_user(*, session: SessionDep, user_in: UserCreate) -> Any:
+async def create_user(*, session: SessionDep, user_in: UserCreate) -> UserPublic:
     """
     Create new user.
     """
+
     user = crud.get_user_by_email(session=session, email=user_in.email)
     if user:
         raise ItemAlreadyExistsError(item_name=user_in.email)
@@ -92,128 +265,42 @@ def create_user(*, session: SessionDep, user_in: UserCreate) -> Any:
     #         html_content=email_data.html_content,
     #     )
 
-    return user
+    return UserPublic.model_validate(user)
 
 
-@router.patch("/me", response_model=UserPublic)
-def update_user_me(
-    *, session: SessionDep, user_in: UserUpdateMe, current_user: CurrentUser
-) -> Any:
-    """
-    Update own user.
-    """
-
-    if user_in.email:
-        existing_user = crud.get_user_by_email(session=session, email=user_in.email)
-        if existing_user and existing_user.id != current_user.id:
-            raise ItemAlreadyExistsError(item_name=user_in.email)
-
-    user_data = user_in.model_dump(exclude_unset=True)
-    current_user.sqlmodel_update(user_data)
-
-    session.add(current_user)
-    session.commit()
-    session.refresh(current_user)
-
-    return current_user
-
-
-@router.patch("/me/password", response_model=Message)
-def update_password_me(
-    *, session: SessionDep, body: UpdatePassword, current_user: CurrentUser
-) -> Any:
-    """
-    Update own password.
-    """
-
-    if not verify_password(body.current_password, current_user.hashed_password):
-        raise PasswordValidationError("Incorrect password")
-    if body.current_password == body.new_password:
-        raise PasswordValidationError(
-            "New password cannot be the same as the current one"
-        )
-
-    hashed_password = get_password_hash(body.new_password)
-    current_user.hashed_password = hashed_password
-
-    session.add(current_user)
-    session.commit()
-    return Message(message="🔐 Password successfully updated ")
-
-
-@router.get("/me", response_model=UserPublic)
-def read_user_me(current_user: CurrentUser) -> Any:
-    """
-    Get current user.
-    """
-    return current_user
-
-
-@router.delete("/me", response_model=Message)
-def delete_user_me(session: SessionDep, current_user: CurrentUser) -> Any:
-    """
-    Delete own user.
-    """
-    if current_user.is_superuser:
-        raise PermissionDeniedError(
-            detail="Super users are not allowed to delete themselves",
-        )
-    session.delete(current_user)
-    session.commit()
-
-    return Message(message="👋 User deleted successfully")
-
-
-@router.post("/signup", response_model=UserPublic)
-def register_user(session: SessionDep, user_in: UserRegister) -> Any:
-    """
-    Create new user without the need to be logged in.
-    """
-    user = crud.get_user_by_email(session=session, email=user_in.email)
-
-    if user:
-        raise EmailValidationError(detail=f"Email '{user_in.email}' already exists")
-
-    user_create = UserCreate.model_validate(user_in)
-    user = crud.create_user(session=session, user_create=user_create)
-
-    return user
-
-
-@router.get("/{user_id}", response_model=UserPublic)
-def get_user_by_id(
-    user_id: uuid.UUID, session: SessionDep, current_user: CurrentUser
-) -> Any:
+@router.get("/{user_id}", response_model=UserPublic, dependencies=[SuperUserRequired])
+async def get_user_by_id(user_id: uuid.UUID, session: SessionDep) -> UserPublic:
     """
     Get a specific user by id.
     """
+
     user = session.get(User, user_id)
 
     if not user:
         raise ItemNotFoundError(item_id=user_id, item_name="User")
 
-    if user == current_user:
-        return user
+    # if user == current_user:
+    #     return user
 
-    if not current_user.is_superuser:
-        raise PermissionDeniedError(
-            detail="The user doesn't have enough privileges",
-        )
+    # if not current_user.is_superuser:
+    #     raise PermissionDeniedError(
+    #         detail="The user doesn't have enough privileges",
+    #     )
 
-    return user
+    return UserPublic.model_validate(user)
 
 
 @router.patch(
     "/{user_id}",
-    dependencies=[Depends(get_current_active_superuser)],
+    dependencies=[SuperUserRequired],
     response_model=UserPublic,
 )
-def update_user(
+async def update_user(
     *,
     session: SessionDep,
     user_id: uuid.UUID,
     user_in: UserUpdate,
-) -> Any:
+) -> UserPublic:
     """
     Update a user.
     """
@@ -229,16 +316,17 @@ def update_user(
 
     db_user = crud.update_user(session=session, db_user=db_user, user_in=user_in)
 
-    return db_user
+    return UserPublic.model_validate(db_user)
 
 
-@router.delete("/{user_id}", dependencies=[Depends(get_current_active_superuser)])
-def delete_user(
+@router.delete("/{user_id}", dependencies=[SuperUserRequired])
+async def delete_user(
     session: SessionDep, current_user: CurrentUser, user_id: uuid.UUID
 ) -> Message:
     """
     Delete a user.
     """
+
     user = session.get(User, user_id)
     if not user:
         raise ItemNotFoundError(item_id=user_id, item_name="User")

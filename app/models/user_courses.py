@@ -24,7 +24,7 @@ class CourseStatus(str, Enum):
 class UserCourseBase(SQLModel):
     status: CourseStatus = Field(default=CourseStatus.ENROLLED)
     current_chapter: int = Field(default=1, ge=1)
-    finished_chapters: list[int] = Field(default=None, unique_items=True)
+    finished_chapters: list[int] = Field(default_factory=list)
     progress: int = Field(default=0, ge=0, le=100)
 
 
@@ -55,7 +55,7 @@ class UserCourseUpdate(UserCourseBase):
 
 
 # on creation
-class UserCourseCreate(UserCourseUpdate):
+class UserCourseCreate(UserCourseBase):
     user_id: uuid.UUID
     course_id: uuid.UUID
 

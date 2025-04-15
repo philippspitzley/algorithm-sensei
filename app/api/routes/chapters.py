@@ -99,7 +99,6 @@ async def create_chapter(
         raise ItemNotFoundError(item_id=course_id, item_name="Course")
 
     chapter = Chapter.model_validate(chapter_in, update={"course_id": course_id})
-    print("CHAPTER:", chapter)
 
     session.add(chapter)
     session.commit()

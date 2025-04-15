@@ -2,7 +2,7 @@ import logging
 
 from sqlmodel import Session
 
-from app.core.db import engine, init_db
+from app.core.db import create_super_user, engine, init_db
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -10,7 +10,10 @@ logger = logging.getLogger(__name__)
 
 def init() -> None:
     with Session(engine) as session:
-        init_db(session)
+        create_super_user(session)
+        init_db(
+            session
+        )  # is used for table creation without migrations from alembic see dp.py
 
 
 def main() -> None:

@@ -1,6 +1,10 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
 from starlette.middleware.cors import CORSMiddleware
+
+from app.initial_data import init
 
 from .api.main import api_router
 from .core.config import settings
@@ -31,3 +35,12 @@ if settings.all_cors_origins:
     )
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup code
+    init()
+    yield
+    # Shutdown code if needed
+    pass

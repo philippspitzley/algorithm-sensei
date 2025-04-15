@@ -1,3 +1,9 @@
 {
-  "cSpell.words": ["changethis", "poolclass", "pyproject", "sqltypes"]
+  "cSpell.words": [
+    "changethis",
+    "onupdate",
+    "poolclass",
+    "pyproject",
+    "sqltypes"
+  ]
 }

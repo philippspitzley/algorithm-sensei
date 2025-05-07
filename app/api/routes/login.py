@@ -1,7 +1,7 @@
 from datetime import timedelta
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, Request, Response
 
 # from fastapi.responses import HTMLResponse
 from fastapi.security import OAuth2PasswordRequestForm
@@ -32,11 +32,14 @@ from app.utils import (
 
 router = APIRouter(tags=["login"])
 
+# Info: request parameter is necessary for limiter
+
 
 @router.post("/login/access-token")
 @limiter.limit("5/minute")  # type: ignore
 def login_access_token(
     response: Response,
+    request: Request,
     session: SessionDep,
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
 ) -> Token:
@@ -73,7 +76,7 @@ def login_access_token(
 
 @router.post("/logout")
 @limiter.limit("10/minute")  # type: ignore
-def logout(response: Response) -> Message:
+def logout(response: Response, request: Request) -> Message:
     """
     Logout by clearing the access token cookie
     """
@@ -84,7 +87,7 @@ def logout(response: Response) -> Message:
 
 @router.post("/login/test-token", response_model=UserPublic)
 @limiter.limit("5/minute")  # type: ignore
-def test_token(current_user: CurrentUser) -> Any:
+def test_token(current_user: CurrentUser, request: Request) -> Any:
     """
     Test access token
     """
@@ -93,7 +96,7 @@ def test_token(current_user: CurrentUser) -> Any:
 
 @router.post("/password-recovery/{email}")
 @limiter.limit("3/5minutes")  # type: ignore
-def recover_password(email: str, session: SessionDep) -> Message:
+def recover_password(email: str, session: SessionDep, request: Request) -> Message:
     """
     Password Recovery
     """
@@ -118,7 +121,7 @@ def recover_password(email: str, session: SessionDep) -> Message:
 
 @router.post("/reset-password/")
 @limiter.limit("3/5minutes")  # type: ignore
-def reset_password(session: SessionDep, body: NewPassword) -> Message:
+def reset_password(session: SessionDep, body: NewPassword, request: Request) -> Message:
     """
     Reset password
     """

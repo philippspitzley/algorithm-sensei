@@ -2,13 +2,17 @@ from collections.abc import Generator
 from typing import Annotated, TypeVar
 
 import jwt
-from fastapi import Depends, HTTPException, Query, status
+from fastapi import Cookie, Depends, Header, HTTPException, Query, status
 from fastapi.security import OAuth2PasswordBearer
 from jwt import InvalidTokenError
 from pydantic import ValidationError
 from sqlmodel import Session, SQLModel
 
-from app.api.exceptions import NotFoundError, PermissionDeniedError
+from app.api.exceptions import (
+    InvalidCredentialsError,
+    NotFoundError,
+    PermissionDeniedError,
+)
 from app.core import security
 from app.core.config import settings
 from app.core.db import engine
@@ -34,7 +38,25 @@ SessionDep = Annotated[Session, Depends(get_db)]
 TokenDep = Annotated[str, Depends(reusable_oauth2)]
 
 
-def get_current_user(session: SessionDep, token: TokenDep) -> User:
+def get_token_from_cookie_or_header(
+    access_token: Annotated[str | None, Cookie()] = None,
+    authorization: str | None = Header(None),
+) -> str:
+    """
+    Get token from cookie or authorization header.
+    """
+
+    if access_token:
+        return access_token
+    elif authorization and authorization.startswith("Bearer "):
+        return authorization.replace("Bearer ", "")
+
+    raise InvalidCredentialsError(detail="Authentication required")
+
+
+def get_current_user(
+    session: SessionDep, token: Annotated[str, Depends(get_token_from_cookie_or_header)]
+) -> User:
     try:
         payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]

@@ -1,7 +1,7 @@
 from datetime import timedelta
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 
 # from fastapi.responses import HTMLResponse
 from fastapi.security import OAuth2PasswordRequestForm
@@ -28,6 +28,7 @@ router = APIRouter(tags=["login"])
 
 @router.post("/login/access-token")
 def login_access_token(
+    response: Response,
     session: SessionDep,
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
 ) -> Token:
@@ -43,11 +44,33 @@ def login_access_token(
         raise HTTPException(status_code=400, detail="Inactive user")
 
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    return Token(
-        access_token=security.create_access_token(
-            user.id, expires_delta=access_token_expires
-        )
+
+    access_token = security.create_access_token(
+        user.id, expires_delta=access_token_expires
     )
+
+    # HTTP-only cookie
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,  # Prevents JavaScript from accessing the cookie, crucial for security
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        expires=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        samesite="lax",  # TODO: IMPORTANT: use "strict in production"
+        secure=False,  # TODO: IMPORTANT: use True in production for HTTPS
+    )
+
+    return Token(access_token=access_token)
+
+
+@router.post("/logout")
+def logout(response: Response) -> Message:
+    """
+    Logout by clearing the access token cookie
+    """
+
+    response.delete_cookie(key="access_token")
+    return Message(message="Successfully logged out")
 
 
 @router.post("/login/test-token", response_model=UserPublic)

@@ -2,8 +2,11 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
+from slowapi.middleware import SlowAPIMiddleware
 from starlette.middleware.cors import CORSMiddleware
 
+from app.api import limiter
+from app.api.exceptions import add_exception_handlers
 from app.initial_data import init
 
 from .api.main import api_router
@@ -23,6 +26,12 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     generate_unique_id_function=custom_generate_unique_id,
 )
+
+
+add_exception_handlers(app)
+
+app.state.limiter = limiter
+app.add_middleware(SlowAPIMiddleware)
 
 # Set all CORS enabled origins
 if settings.all_cors_origins:

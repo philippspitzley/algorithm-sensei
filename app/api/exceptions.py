@@ -1,6 +1,24 @@
 import uuid
 
-from fastapi import HTTPException, status
+from fastapi import FastAPI, HTTPException, Request, status
+from slowapi.errors import RateLimitExceeded
+
+
+# register custom exception handling for other libraries
+def add_exception_handlers(app: FastAPI) -> None:
+    """
+    Register all exception handlers to the FastAPI app
+    """
+
+    async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
+        retry_after = getattr(exc, "retry_after", None)
+        raise RateLimitError(
+            detail=f"Rate limit exceeded. Please try again {'after ' + retry_after * 60 + ' minutes' if retry_after is not None else 'later'}.",
+            retry_after=retry_after,
+        )
+
+    # registering it after function definition because decorator throws Pylance error
+    app.exception_handler(RateLimitExceeded)(rate_limit_exceeded_handler)
 
 
 class DatabaseOperationError(HTTPException):
@@ -84,3 +102,18 @@ class ResourceConflictError(HTTPException):
         if detail:
             message = f"{message}: {detail}"
         super().__init__(status_code=status.HTTP_409_CONFLICT, detail=message)
+
+
+class RateLimitError(HTTPException):
+    def __init__(
+        self, detail: str = "Too many requests", retry_after: int | None = None
+    ):
+        headers: dict[str, str] = {}
+        if retry_after is not None:
+            headers["Retry-After"] = str(retry_after)
+
+        super().__init__(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"⏱️ {detail}",
+            headers=headers,
+        )

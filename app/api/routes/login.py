@@ -17,6 +17,7 @@ from app.api.exceptions import (
     NotFoundError,
     TokenValidationError,
 )
+from app.api.limiter import limiter
 from app.core import security
 from app.core.config import settings
 from app.core.security import get_password_hash
@@ -33,6 +34,7 @@ router = APIRouter(tags=["login"])
 
 
 @router.post("/login/access-token")
+@limiter.limit("5/minute")  # type: ignore
 def login_access_token(
     response: Response,
     session: SessionDep,
@@ -70,6 +72,7 @@ def login_access_token(
 
 
 @router.post("/logout")
+@limiter.limit("10/minute")  # type: ignore
 def logout(response: Response) -> Message:
     """
     Logout by clearing the access token cookie
@@ -80,6 +83,7 @@ def logout(response: Response) -> Message:
 
 
 @router.post("/login/test-token", response_model=UserPublic)
+@limiter.limit("5/minute")  # type: ignore
 def test_token(current_user: CurrentUser) -> Any:
     """
     Test access token
@@ -88,6 +92,7 @@ def test_token(current_user: CurrentUser) -> Any:
 
 
 @router.post("/password-recovery/{email}")
+@limiter.limit("3/5minutes")  # type: ignore
 def recover_password(email: str, session: SessionDep) -> Message:
     """
     Password Recovery
@@ -112,6 +117,7 @@ def recover_password(email: str, session: SessionDep) -> Message:
 
 
 @router.post("/reset-password/")
+@limiter.limit("3/5minutes")  # type: ignore
 def reset_password(session: SessionDep, body: NewPassword) -> Message:
     """
     Reset password

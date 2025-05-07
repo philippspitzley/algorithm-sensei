@@ -14,7 +14,7 @@ class DatabaseOperationError(HTTPException):
 class NotFoundError(HTTPException):
     def __init__(self, object_name: str | None, detail: str = "❓ Not found"):
         if object_name:
-            detail = f"❓ {object_name} not found."
+            detail = f"❓ {object_name} not found." + detail
         super().__init__(status_code=status.HTTP_404_NOT_FOUND, detail=detail)
 
 
@@ -64,8 +64,18 @@ class PasswordValidationError(ValidationError):
 
 
 class EmailValidationError(ValidationError):
-    def __init__(self, detail: str = " Email validation failed"):
+    def __init__(self, detail: str = "Email validation failed"):
         super().__init__(detail=f"📧 {detail}")
+
+
+class TokenValidationError(PermissionDeniedError):
+    def __init__(self, detail: str = "Invalid or expired token"):
+        super().__init__(detail=f"🔒 {detail}")
+
+
+class InactiveUserError(ValidationError):
+    def __init__(self, detail: str = "User account is inactive"):
+        super().__init__(detail=f"👤 {detail}")
 
 
 class ResourceConflictError(HTTPException):

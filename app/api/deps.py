@@ -2,16 +2,18 @@ from collections.abc import Generator
 from typing import Annotated, TypeVar
 
 import jwt
-from fastapi import Cookie, Depends, Header, HTTPException, Query, status
+from fastapi import Cookie, Depends, Header, Query
 from fastapi.security import OAuth2PasswordBearer
 from jwt import InvalidTokenError
 from pydantic import ValidationError
 from sqlmodel import Session, SQLModel
 
 from app.api.exceptions import (
+    InactiveUserError,
     InvalidCredentialsError,
     NotFoundError,
     PermissionDeniedError,
+    TokenValidationError,
 )
 from app.core import security
 from app.core.config import settings
@@ -63,15 +65,12 @@ def get_current_user(
         )
         token_data = TokenPayload(**payload)
     except (InvalidTokenError, ValidationError):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Could not validate credentials",
-        )
+        raise TokenValidationError(detail="Could not validate credentials")
     user = session.get(User, token_data.sub)
     if not user:
         raise NotFoundError(object_name="User")
     if not user.is_active:
-        raise HTTPException(status_code=400, detail="Inactive user")
+        raise InactiveUserError()
     return user
 
 

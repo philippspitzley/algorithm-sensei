@@ -45,7 +45,7 @@ lint.ignore = [
 ]
 
 # Optional: Exclude test files or migrations if needed
-exclude = ["app/alembic"]
+exclude = ["app/alembic/env.py"]
 
 # Enable autofix for everything (used with `ruff check --fix`)
 fix = true

@@ -38,7 +38,7 @@ class HttpUrlType(TypeDecorator[HttpUrl]):
 class ChapterBase(SQLModel):
     chapter_num: int = Field(ge=1)
     title: str = Field(min_length=1, max_length=255)
-    description: str | None = Field(default=None, max_length=255)
+    description: str | None = Field(default=None)
 
 
 class ChapterPointBase(SQLModel):
@@ -79,7 +79,7 @@ class ChapterPointCreate(ChapterPointBase):
 class ChapterUpdate(SQLModel):
     chapter_num: int | None = Field(default=None, ge=1)
     title: str | None = Field(default=None, min_length=1, max_length=255)
-    description: str | None = Field(default=None, max_length=255)
+    description: str | None = Field(default=None)
 
 
 class ChapterPointUpdate(SQLModel):

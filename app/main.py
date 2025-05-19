@@ -2,7 +2,6 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
-from slowapi.middleware import SlowAPIMiddleware
 from starlette.middleware.cors import CORSMiddleware
 
 from app.api import limiter
@@ -21,17 +20,23 @@ def custom_generate_unique_id(route: APIRoute) -> str:
     return f"{route.tags[0]}-{route.name}"
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup code
+    init()
+    yield
+    # Shutdown code if needed
+    pass
+
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     generate_unique_id_function=custom_generate_unique_id,
+    lifespan=lifespan,
 )
 
-
-add_exception_handlers(app)
-
 app.state.limiter = limiter
-app.add_middleware(SlowAPIMiddleware)
 
 # Set all CORS enabled origins
 if settings.all_cors_origins:
@@ -45,11 +50,5 @@ if settings.all_cors_origins:
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Startup code
-    init()
-    yield
-    # Shutdown code if needed
-    pass
+# add custom exception handlers for middleware like slowapi
+add_exception_handlers(app)

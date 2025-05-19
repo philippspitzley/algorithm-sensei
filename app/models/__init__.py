@@ -26,6 +26,7 @@ __all__ = [
     # UserCourse models
     "CourseStatus",
     "UserCourse",
+    "UserCourseFinishedChapter",
     "UserCourseBase",
     "UserCourseCreate",
     "UserCoursePublic",
@@ -85,6 +86,7 @@ from .user_courses import (
     UserCourse,
     UserCourseBase,
     UserCourseCreate,
+    UserCourseFinishedChapter,
     UserCoursePublic,
     UserCourseUpdate,
 )

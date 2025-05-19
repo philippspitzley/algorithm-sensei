@@ -19,7 +19,7 @@ from app.models import (
     Message,
 )
 
-router = APIRouter(prefix="/chapterPoints", tags=["chapter_points"])
+router = APIRouter(prefix="/chapter-points", tags=["chapter_points"])
 
 
 @router.get("/", response_model=ChapterPointsPublic)

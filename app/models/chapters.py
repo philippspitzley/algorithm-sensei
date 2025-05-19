@@ -105,7 +105,7 @@ class ChapterPointsPublic(SQLModel):
 class ChapterPublic(ChapterBase):
     id: uuid.UUID
     course_id: uuid.UUID
-    points: list[ChapterPointPublic] = Field(default_factory=list)
+    points: list[ChapterPointPublic] | None = None  # Field(default_factory=list)
 
 
 class ChaptersPublic(SQLModel):

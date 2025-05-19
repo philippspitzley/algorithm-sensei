@@ -12,6 +12,7 @@ from app.api.exceptions import (
 from app.models import (
     Chapter,
     ChapterCreate,
+    ChapterPointPublic,
     ChapterPublic,
     ChaptersPublic,
     ChapterUpdate,
@@ -66,6 +67,24 @@ async def get_chapter(
         chapter = chapter.model_dump(exclude={"chapter_points"})
 
     return ChapterPublic.model_validate(chapter)
+
+
+@router.get("/{chapter_id}/chapter-points")
+async def get_chapter_points_from_chapter(
+    session: SessionDep,
+    chapter_id: uuid.UUID,
+) -> list[ChapterPointPublic]:
+    chapter = session.get(Chapter, chapter_id)
+
+    if not chapter:
+        raise ItemNotFoundError(item_id=chapter_id, item_name="Chapter")
+
+    chapter_points = [
+        ChapterPointPublic.model_validate(chapter_point)
+        for chapter_point in chapter.points
+    ]
+
+    return chapter_points
 
 
 @router.post("/{course_id}", response_model=ChapterPublic)

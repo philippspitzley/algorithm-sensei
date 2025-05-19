@@ -6,6 +6,7 @@ from sqlmodel import func, select
 from app.api.deps import CurrentUser, PaginationParams, SessionDep
 from app.api.exceptions import ItemNotFoundError, PermissionDeniedError
 from app.models import (
+    ChapterPublic,
     Course,
     CourseCreate,
     CoursePublic,
@@ -21,6 +22,7 @@ router = APIRouter(prefix="/courses", tags=["courses"])
 async def get_courses(
     *,
     session: SessionDep,
+    include_chapters: bool = False,
     pagination_params: PaginationParams,
     include_count: bool = False,
 ) -> CoursesPublic:
@@ -39,6 +41,10 @@ async def get_courses(
 
     statement = select(Course).offset(skip).limit(limit)
     courses = session.exec(statement).all()
+
+    if not include_chapters:
+        courses = [course.model_dump(exclude={"chapters"}) for course in courses]
+
     public_courses = [CoursePublic.model_validate(course) for course in courses]
 
     return CoursesPublic(data=public_courses, count=count)
@@ -61,6 +67,26 @@ async def get_course(
         course = course.model_dump(exclude={"chapters"})
 
     return CoursePublic.model_validate(course)
+
+
+@router.get("/{course_id}/chapters")
+async def get_chapters_from_course(
+    session: SessionDep, course_id: uuid.UUID, include_chapter_points: bool = False
+) -> list[ChapterPublic]:
+    course = session.get(Course, course_id)
+
+    if not course:
+        raise ItemNotFoundError(item_id=course_id, item_name="Course")
+
+    chapters = [ChapterPublic.model_validate(chapter) for chapter in course.chapters]
+
+    if not include_chapter_points:
+        chapters_dict = [
+            chapter.model_dump(exclude={"points"}) for chapter in course.chapters
+        ]
+        chapters = [ChapterPublic.model_validate(chapter) for chapter in chapters_dict]
+
+    return chapters
 
 
 @router.post("/", response_model=CoursePublic)

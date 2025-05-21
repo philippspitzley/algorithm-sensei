@@ -1,6 +1,5 @@
 # pyright: reportIncompatibleVariableOverride=false
 import uuid
-from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING
 
@@ -27,10 +26,10 @@ class UserCourseBase(SQLModel):
     current_chapter: int = Field(default=1)
     progress: int = Field(default=0)
 
-    created_at: datetime | None = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(
-        default_factory=datetime.utcnow, sa_column_kwargs={"onupdate": datetime.utcnow}
-    )
+    # created_at: datetime | None = Field(default_factory=datetime.utcnow)
+    # updated_at: datetime = Field(
+    #     default_factory=datetime.utcnow, sa_column_kwargs={"onupdate": datetime.utcnow}
+    # )
 
 
 # Database model
@@ -49,8 +48,8 @@ class UserCourse(TimeStampMixin, UserCourseBase, table=True):
     )
 
 
-class UserCourseFinishedChapter(SQLModel, table=True):
-    __tablename__ = "usercoursefinishedchapter"
+class UserCourseFinishedChapter(TimeStampMixin, SQLModel, table=True):
+    # __tablename__ = "usercoursefinishedchapter"
 
     user_course_user_id: uuid.UUID = Field(primary_key=True)
     user_course_course_id: uuid.UUID = Field(primary_key=True)

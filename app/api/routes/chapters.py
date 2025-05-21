@@ -131,6 +131,20 @@ async def complete_chapter(
     if not course:
         raise ItemNotFoundError(item_id=course_id, item_name="Course")
 
+    # check if user has already completed the chapter
+    user_course_finished_chapter = session.exec(
+        select(UserCourseFinishedChapter).where(
+            UserCourseFinishedChapter.chapter_id == chapter_id,
+            UserCourseFinishedChapter.user_course_user_id == current_user.id,
+        )
+    ).first()
+
+    if user_course_finished_chapter:
+        raise ItemAlreadyExistsError(
+            item_name=f"Chapter {chapter_id} by user {current_user.id}"
+        )
+
+    # create new user_course_finished_chapter
     new_user_course_finished_chapter = UserCourseFinishedChapter(
         user_course_user_id=current_user.id,
         user_course_course_id=course_id,

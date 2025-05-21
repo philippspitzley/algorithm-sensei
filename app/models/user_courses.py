@@ -4,7 +4,8 @@ from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKeyConstraint, UniqueConstraint
+from pydantic import computed_field
+from sqlalchemy import ForeignKeyConstraint
 from sqlmodel import Field, Relationship, SQLModel
 
 from .base import TimeStampMixin
@@ -42,9 +43,9 @@ class UserCourse(TimeStampMixin, UserCourseBase, table=True):
     # Relationships
     user: "User" = Relationship(back_populates="courses")
     course: "Course" = Relationship(back_populates="user_courses")
-
-    __table_args__ = (
-        UniqueConstraint("user_id", "course_id", name="unique_user_course"),
+    finished_chapters: list["UserCourseFinishedChapter"] = Relationship(
+        back_populates="user_course",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
     )
 
 
@@ -53,9 +54,12 @@ class UserCourseFinishedChapter(SQLModel, table=True):
 
     user_course_user_id: uuid.UUID = Field(primary_key=True)
     user_course_course_id: uuid.UUID = Field(primary_key=True)
-    chapter_id: uuid.UUID = Field(
-        primary_key=True
-    )  # Foreign key defined in __table_args__
+    chapter_id: uuid.UUID = Field(primary_key=True)
+
+    # Relationships
+    user_course: UserCourse = Relationship(
+        back_populates="finished_chapters",
+    )
 
     __table_args__ = (
         ForeignKeyConstraint(
@@ -78,6 +82,7 @@ class UserCourseUpdate(UserCourseBase):
     status: CourseStatus | None = None
     current_chapter: int | None = None
     progress: int | None = None
+    finished_chapters: list[uuid.UUID] | None = None
 
 
 # on creation
@@ -90,3 +95,11 @@ class UserCourseCreate(UserCourseBase):
 class UserCoursePublic(UserCourseBase):
     user_id: uuid.UUID
     course_id: uuid.UUID
+    finished_chapters: list[UserCourseFinishedChapter] = Field(default=[], exclude=True)
+
+    @computed_field(alias="finished_chapters")
+    @property
+    def finished_chapter_ids_list(self) -> list[uuid.UUID]:
+        if self.finished_chapters:
+            return [fc.chapter_id for fc in self.finished_chapters]
+        return []

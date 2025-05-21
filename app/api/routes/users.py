@@ -30,7 +30,13 @@ from app.models import (
     UserUpdateMe,
 )
 from app.models.courses import Course
-from app.models.user_courses import UserCourse, UserCourseCreate, UserCourseUpdate
+from app.models.user_courses import (
+    UserCourse,
+    UserCourseCreate,
+    UserCourseFinishedChapter,
+    UserCoursePublic,
+    UserCourseUpdate,
+)
 
 # uncomment next two lines for email support
 # from app.utils import generate_new_account_email, send_email
@@ -129,18 +135,38 @@ async def delete_user_me(session: SessionDep, current_user: CurrentUser) -> Mess
     return Message(message="👋 User deleted successfully")
 
 
-@router.get("/me/courses", response_model=list[UserCourse])
+@router.get("/me/courses", response_model=UserCoursePublic | list[UserCoursePublic])
 async def get_my_courses(
-    *, session: SessionDep, current_user: CurrentUser
-) -> list[UserCourse]:
+    *,
+    session: SessionDep,
+    current_user: CurrentUser,
+    course_id: uuid.UUID | None = None,
+) -> list[UserCoursePublic] | UserCoursePublic:
     """
     Get enrolled courses.
     """
 
-    statement = select(UserCourse).where(current_user.id == UserCourse.user_id)
+    course_statement = select(UserCourse).where(
+        UserCourse.user_id == current_user.id,
+        UserCourse.course_id == course_id,
+    )
+
+    courses_statement = select(UserCourse).where(
+        UserCourse.user_id == current_user.id,
+    )
+
+    statement = course_statement if course_id else courses_statement
+
     user_courses = session.exec(statement).all()
 
-    return list(user_courses)
+    public_user_courses = [
+        UserCoursePublic.model_validate(user_course) for user_course in user_courses
+    ]
+
+    if len(public_user_courses) == 1:
+        return public_user_courses[0]
+
+    return public_user_courses
 
 
 @router.post("/me/courses/{course_id}", response_model=UserCourse)
@@ -193,16 +219,51 @@ async def update_my_course(
     if not user_course:
         raise ItemNotFoundError(item_id=course_id, item_name="User course")
 
-    # if user_course_in.finished_chapters:
-    #     concatenated_finished_chapters = list(
-    #         set(user_course_in.finished_chapters) | set(user_course.finished_chapters)
-    #     )
-    #     user_course_in.finished_chapters = concatenated_finished_chapters
+    if user_course_in.finished_chapters is not None:
+        # Fetch all existing finished chapter records for this user_course
+        statement = select(UserCourseFinishedChapter).where(
+            UserCourseFinishedChapter.user_course_user_id == current_user.id,
+            UserCourseFinishedChapter.user_course_course_id == course_id,
+        )
+        existing_finished_chapter_records = session.exec(statement).all()
 
-    user_course_update = user_course_in.model_dump(exclude_unset=True)
-    user_course.sqlmodel_update(user_course_update)
+        # Create a set of existing finished chapter IDs in the database
+        existing_finished_chapter_ids = {
+            record.chapter_id for record in existing_finished_chapter_records
+        }
 
-    session.add(user_course)
+        incoming_finished_chapter_ids = set(user_course_in.finished_chapters)
+
+        # Chapters to add
+        chapter_ids_to_add = (
+            incoming_finished_chapter_ids - existing_finished_chapter_ids
+        )
+        for chapter_id_to_add in chapter_ids_to_add:
+            new_finished_chapter = UserCourseFinishedChapter(
+                user_course_user_id=current_user.id,
+                user_course_course_id=course_id,
+                chapter_id=chapter_id_to_add,
+            )
+            session.add(new_finished_chapter)
+            print("Staged for adding new finished chapter:", new_finished_chapter)
+
+        # Chapters to remove
+        chapter_ids_to_remove = (
+            existing_finished_chapter_ids - incoming_finished_chapter_ids
+        )
+        for record_to_remove in existing_finished_chapter_records:
+            if record_to_remove.chapter_id in chapter_ids_to_remove:
+                session.delete(record_to_remove)
+                print("Staged for removing finished chapter:", record_to_remove)
+
+    update_data = user_course_in.model_dump(
+        exclude_unset=True,
+        exclude={"finished_chapters"},
+    )
+    if update_data:
+        user_course.sqlmodel_update(update_data)
+        session.add(user_course)
+
     session.commit()
     session.refresh(user_course)
 

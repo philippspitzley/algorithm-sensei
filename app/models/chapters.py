@@ -1,7 +1,7 @@
 import uuid
 from typing import TYPE_CHECKING, Any
 
-from pydantic import HttpUrl
+from pydantic import HttpUrl, model_validator
 from sqlalchemy.types import String, TypeDecorator
 from sqlmodel import Field, Relationship, SQLModel, Text
 
@@ -74,7 +74,25 @@ class ChapterCreate(ChapterBase):
 
 
 class ChapterPointCreate(ChapterPointBase):
-    pass
+    @model_validator(mode="after")
+    def check_exclusive_content_fields(self) -> "ChapterPointCreate":
+        content_fields = [
+            self.text,
+            self.code_block,
+            self.image,
+            self.video,
+        ]
+        provided_fields_count = sum(1 for field in content_fields if field is not None)
+
+        if provided_fields_count == 0:
+            raise ValueError(
+                "One of 'text', 'code_block', 'image', or 'video' must be provided."
+            )
+        if provided_fields_count > 1:
+            raise ValueError(
+                "Only one of 'text', 'code_block', 'image', or 'video' can be provided."
+            )
+        return self
 
 
 class ChapterUpdate(SQLModel):

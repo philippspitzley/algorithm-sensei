@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 # Shared properties
 class CourseBase(SQLModel):
-    title: str = Field(min_length=1, max_length=255)
+    title: str = Field(min_length=1, max_length=255, unique=True)
     description: str | None = Field(default=None)
 
 

@@ -4,7 +4,11 @@ from fastapi import APIRouter
 from sqlmodel import func, select
 
 from app.api.deps import CurrentUser, PaginationParams, SessionDep
-from app.api.exceptions import ItemNotFoundError, PermissionDeniedError
+from app.api.exceptions import (
+    ItemAlreadyExistsError,
+    ItemNotFoundError,
+    PermissionDeniedError,
+)
 from app.models import (
     ChapterPublic,
     Course,
@@ -101,6 +105,11 @@ async def create_course(
         raise PermissionDeniedError()
 
     course = Course.model_validate(course_in)
+
+    courses = session.exec(select(Course)).all()
+
+    if course.title in [course.title for course in courses]:
+        raise ItemAlreadyExistsError("Course-Title")
 
     session.add(course)
     session.commit()

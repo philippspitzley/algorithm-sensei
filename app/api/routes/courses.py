@@ -69,7 +69,7 @@ async def get_course(
     return CoursePublic.model_validate(course)
 
 
-@router.get("/{course_id}/chapters")
+@router.get("/{course_id}/chapters", response_model=list[ChapterPublic])
 async def get_chapters_from_course(
     session: SessionDep, course_id: uuid.UUID, include_chapter_points: bool = False
 ) -> list[ChapterPublic]:
@@ -86,7 +86,7 @@ async def get_chapters_from_course(
         ]
         chapters = [ChapterPublic.model_validate(chapter) for chapter in chapters_dict]
 
-    return chapters
+    return sorted(chapters, key=lambda chapter: chapter.chapter_num)
 
 
 @router.post("/", response_model=CoursePublic)

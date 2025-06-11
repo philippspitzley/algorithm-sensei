@@ -135,13 +135,13 @@ async def delete_user_me(session: SessionDep, current_user: CurrentUser) -> Mess
     return Message(message="👋 User deleted successfully")
 
 
-@router.get("/me/courses", response_model=UserCoursePublic | list[UserCoursePublic])
+@router.get("/me/courses", response_model=list[UserCoursePublic])
 async def get_my_courses(
     *,
     session: SessionDep,
     current_user: CurrentUser,
     course_id: uuid.UUID | None = None,
-) -> list[UserCoursePublic] | UserCoursePublic:
+) -> list[UserCoursePublic]:
     """
     Get enrolled courses.
     """
@@ -162,9 +162,6 @@ async def get_my_courses(
     public_user_courses = [
         UserCoursePublic.model_validate(user_course) for user_course in user_courses
     ]
-
-    if len(public_user_courses) == 1:
-        return public_user_courses[0]
 
     return public_user_courses
 

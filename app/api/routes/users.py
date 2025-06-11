@@ -183,9 +183,10 @@ async def enroll_course(
         raise ItemNotFoundError(item_id=course_id, item_name="Course")
 
     # check if course already in UserCourse
-    statement = select(UserCourse).where(UserCourse.course_id == course_id)
-    user_course_exists = session.exec(statement).first()
-    if user_course_exists:
+    user_course = session.get(
+        UserCourse, {"user_id": current_user.id, "course_id": course_id}
+    )
+    if user_course:
         raise ItemAlreadyExistsError(item_name="User course")
 
     user_course_in = UserCourseCreate(user_id=current_user.id, course_id=course_id)

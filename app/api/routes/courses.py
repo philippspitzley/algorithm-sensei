@@ -18,6 +18,7 @@ from app.models import (
     CourseUpdate,
     Message,
 )
+from app.models.chapters import ChaptersPublic
 
 router = APIRouter(prefix="/courses", tags=["courses"])
 
@@ -73,10 +74,13 @@ async def get_course(
     return CoursePublic.model_validate(course)
 
 
-@router.get("/{course_id}/chapters", response_model=list[ChapterPublic])
+@router.get("/{course_id}/chapters", response_model=ChaptersPublic)
 async def get_chapters_from_course(
-    session: SessionDep, course_id: uuid.UUID, include_chapter_points: bool = False
-) -> list[ChapterPublic]:
+    session: SessionDep,
+    course_id: uuid.UUID,
+    include_chapter_points: bool = False,
+    include_count: bool = False,
+) -> ChaptersPublic:
     course = session.get(Course, course_id)
 
     if not course:
@@ -90,7 +94,11 @@ async def get_chapters_from_course(
         ]
         chapters = [ChapterPublic.model_validate(chapter) for chapter in chapters_dict]
 
-    return sorted(chapters, key=lambda chapter: chapter.chapter_num)
+    public_chapters = sorted(chapters, key=lambda chapter: chapter.chapter_num)
+
+    count = len(public_chapters) if include_count else None
+
+    return ChaptersPublic(data=public_chapters, count=count)
 
 
 @router.post("/", response_model=CoursePublic)

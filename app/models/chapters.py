@@ -40,6 +40,7 @@ class ChapterBase(SQLModel):
     title: str = Field(min_length=1, max_length=255)
     description: str | None = Field(default=None)
     exercise: str | None = Field(default=None, sa_type=Text)
+    test_code: str | None = Field(default=None, sa_type=Text)
 
 
 class ChapterPointBase(SQLModel):
@@ -100,6 +101,7 @@ class ChapterUpdate(SQLModel):
     title: str | None = Field(default=None, min_length=1, max_length=255)
     description: str | None = Field(default=None)
     exercise: str | None = Field(default=None)
+    test_code: str | None = Field(default=None)
 
 
 class ChapterPointUpdate(SQLModel):

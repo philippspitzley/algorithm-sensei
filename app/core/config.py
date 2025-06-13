@@ -92,6 +92,9 @@ class Settings(BaseSettings):
     FIRST_SUPERUSER_EMAIL: EmailStr = "super.user@mail.com"
     FIRST_SUPERUSER_PASSWORD: str = "changethis"
 
+    GEMINI_API_KEY: str = ""
+    LOGFIRE_TOKEN: str = ""
+
     def _check_default_secret(self, var_name: str, value: str | None) -> None:
         if value == "changethis":
             message = (

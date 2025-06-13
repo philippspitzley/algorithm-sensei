@@ -47,7 +47,6 @@ __all__ = [
     "Token",
     "TokenPayload",
     # AI models
-    "HintType",
     "HintResponse",
     "HintRequest",
 ]
@@ -56,7 +55,7 @@ __all__ = [
 from sqlmodel import SQLModel
 
 # AI models
-from .ai_models import HintRequest, HintResponse, HintType
+from .ai_models import HintRequest, HintResponse
 
 # Base
 from .base import TimeStampMixin

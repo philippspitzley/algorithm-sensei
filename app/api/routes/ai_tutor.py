@@ -9,7 +9,7 @@ router = APIRouter(prefix="/ai", tags=["AI"])
 
 
 @router.post("/generate", response_model=HintResponse)
-@limiter.limit("1/hour")  # type: ignore
+@limiter.limit("5/day")  # type: ignore
 async def get_hint(hint_request: HintRequest, request: Request) -> HintResponse:
     """Generate a contextual hint for a coding exercise."""
     with logfire.span("hint_endpoint"):

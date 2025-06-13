@@ -32,22 +32,6 @@ Response Guidelines:
 - Set confidence_score between 0.1-1.0 based on how helpful you think your hint is
 - Set detected_issue_type to describe what problem you identified (e.g., "missing base case", "syntax error", "wrong approach", "concept understanding")
 """,
-    # old_system_prompt was:
-    # """
-    #     system_prompt="""You are an expert JavaScript algorithms tutor helping students learn data structures and algorithms.
-    # Your role:
-    # - Provide helpful hints without giving away the complete solution
-    # - Explain concepts clearly for beginners
-    # - Guide students through problem-solving step by step
-    # - Focus on JavaScript syntax and best practices
-    # - Encourage learning through discovery
-    # Guidelines:
-    # - Keep hints concise but informative
-    # - Provide code snippets only when necessary for understanding
-    # - Always include next steps to guide the student forward
-    # - Adjust your language based on the difficulty level
-    # - Reference the specific exercise context provided
-    # """,
 )
 
 

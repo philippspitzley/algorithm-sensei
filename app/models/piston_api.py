@@ -21,6 +21,7 @@ class Files(SQLModel):
 
 class CodeError(SQLModel):
     type: str | None = None
+    status_code: int | None = None
     message: str | None = None
     pointer: str | None = None
     line: str | None = None
@@ -36,4 +37,4 @@ class CodeResponse(SQLModel):
 class CodeRequest(SQLModel):
     language: str
     version: str
-    files: Files
+    files: list[Files]

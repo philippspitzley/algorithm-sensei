@@ -2,6 +2,7 @@ import secrets
 import warnings
 from typing import Annotated, Literal, Self
 
+from httpx import Timeout
 from pydantic import (
     AnyUrl,
     BeforeValidator,
@@ -93,6 +94,8 @@ class Settings(BaseSettings):
     FIRST_SUPERUSER_PASSWORD: str = "changethis"
 
     PISTON_API_URL: str = "http://localhost:2000/api/v2/execute"
+    # Timeout: 3 s to connect + 5 s max for the request
+    PISTON_TIMEOUT: Timeout = Timeout(7.0)
 
     def _check_default_secret(self, var_name: str, value: str | None) -> None:
         if value == "changethis":

@@ -1,6 +1,8 @@
 import uuid
+from typing import Any, cast  # Import cast
 
 from fastapi import FastAPI, HTTPException, Request, status
+from httpx import Response as HttpxResponse
 from slowapi.errors import RateLimitExceeded
 
 
@@ -153,3 +155,48 @@ class RateLimitError(CustomError):
         # Add headers after initialization
         if retry_after is not None:
             self.headers = {"Retry-After": str(retry_after)}
+
+
+class PistonAPIError(CustomError):
+    def __init__(self, response: HttpxResponse):
+        upstream_status_code = response.status_code
+        piston_error_detail: str = response.text
+
+        potential_json_data: Any = response.json()
+
+        if isinstance(potential_json_data, dict):
+            # Use cast to assure Pylance about the dictionary's key/value types
+            error_dict = cast(dict[str, Any], potential_json_data)
+            message_from_json = error_dict.get("message")
+
+            if isinstance(message_from_json, str):
+                piston_error_detail = message_from_json
+
+        our_status_code: int
+        error_message: str
+
+        if 400 <= upstream_status_code < 500:
+            our_status_code = status.HTTP_400_BAD_REQUEST
+            error_message = f"Request to Piston API failed: {piston_error_detail}"
+        elif 500 <= upstream_status_code < 600:
+            our_status_code = status.HTTP_502_BAD_GATEWAY
+            error_message = f"Piston API returned server error: {piston_error_detail}"
+        else:
+            # Handle other status codes to prevent UnboundLocalError
+            our_status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+            error_message = f"Piston API returned an unexpected status {upstream_status_code}: {piston_error_detail}"
+
+        super().__init__(
+            status_code=our_status_code,
+            message=error_message,
+            error_type="PistonAPIError",
+        )
+
+
+class InternalServerError(CustomError):
+    def __init__(self, detail: str = "An unexpected internal server error occurred"):
+        super().__init__(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            message=detail,
+            error_type="InternalServerError",
+        )

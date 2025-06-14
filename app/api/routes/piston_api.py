@@ -1,50 +1,46 @@
 import re
 
 import httpx
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 
+from app.api.exceptions import InternalServerError, PistonAPIError
 from app.core.config import settings
 from app.models.piston_api import CodeError, CodeRequest, CodeResponse
 
 router = APIRouter(prefix="/piston", tags=["piston_api"])
+client = httpx.AsyncClient(timeout=settings.PISTON_TIMEOUT)
 
 
 @router.post("/execute", response_model=CodeResponse)
 async def execute_code(request: CodeRequest) -> CodeResponse:
-    async with httpx.AsyncClient() as client:
-        try:
-            response = await client.post(
-                settings.PISTON_API_URL,
-                json={
-                    "language": request.language,
-                    "version": request.version,
-                    "files": [
-                        {"name": request.files.name, "content": request.files.content}
-                    ],
-                },
-            )
-            response.raise_for_status()
-            data: CodeResponse = response.json()
+    payload = request.model_dump(exclude_none=True)
+    try:
+        res = await client.post(
+            settings.PISTON_API_URL,
+            json=payload,
+        )
+        res.raise_for_status()
+        result = res.json()
 
-            if data.run and data.run.stderr:
-                error = parse_error(data["run"]["stderr"])
-                print("Compile Error Found:", error)
+    except httpx.HTTPStatusError as error:
+        raise PistonAPIError(response=error.response)
 
-                return CodeResponse(run=data["run"], error=error)
+    except httpx.RequestError as error:
+        msg = f"Could not connect to Piston API: {str(error)}"
+        raise InternalServerError(detail=msg)
 
-            print("No errors in run output.")
+    data = CodeResponse.model_validate(result)
 
-        except httpx.HTTPStatusError as error:
-            print("Error Response:", error.response.json())
-            raise HTTPException(
-                status_code=error.response.status_code,
-                detail=error.response.json(),
-            )
-            return CodeResponse(
-                compile=None, run=None, error=CodeError(message=str(error))
-            )
+    compile_res = getattr(data, "compile", None)
+    run_res = getattr(data, "run", None)
+    error = None
 
-        return CodeResponse(compile=data.get("compile"), run=data["run"], error=None)
+    if run_res and run_res.stderr:
+        error = parse_error(run_res.stderr)
+
+        return CodeResponse(compile=compile_res, run=run_res, error=error)
+
+    return CodeResponse(compile=data.compile, run=data.run, error=error)
 
 
 def parse_error(stderr: str) -> CodeError:

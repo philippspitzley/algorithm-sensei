@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 
+import logfire
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
 from starlette.middleware.cors import CORSMiddleware
@@ -37,6 +38,11 @@ app = FastAPI(
 )
 
 app.state.limiter = limiter
+
+# Initialize Logfire
+logfire.configure(token=settings.LOGFIRE_TOKEN)
+# logfire.instrument_fastapi(app, capture_headers=True)
+# logfire.instrument_psycopg()
 
 # Set all CORS enabled origins
 if settings.all_cors_origins:

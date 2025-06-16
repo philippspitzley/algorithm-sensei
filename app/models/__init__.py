@@ -46,10 +46,16 @@ __all__ = [
     "NewPassword",
     "Token",
     "TokenPayload",
+    # AI models
+    "HintResponse",
+    "HintRequest",
 ]
 
 # Import and re-export all models to avoid circular imports
 from sqlmodel import SQLModel
+
+# AI models
+from .ai_models import HintRequest, HintResponse
 
 # Base
 from .base import TimeStampMixin

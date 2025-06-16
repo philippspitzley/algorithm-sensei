@@ -47,8 +47,11 @@ def parse_error(stderr: str) -> CodeError:
     """Parse the stderr output to extract error details."""
 
     # Extract line and column
-    location_match = re.search(r"main\.js:(\d+):(\d+)", stderr)
-    line, column = location_match.groups() if location_match else (None, None)
+    location_match = re.search(r"\(/box/submission/(main.py:(\d?):(\d?))\)", stderr)
+
+    location, line, column = (
+        location_match.groups() if location_match else (None, None, None)
+    )
 
     # Extract pointer (line with the caret)
     pointer_match = re.search(r"(?m)^(\s*\^)\s*$", stderr)
@@ -65,6 +68,7 @@ def parse_error(stderr: str) -> CodeError:
         type=error_type,
         message=error_message,
         pointer=pointer_line,
+        location=location,
         line=line,
         column=column,
     )

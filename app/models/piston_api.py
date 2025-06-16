@@ -24,6 +24,7 @@ class CodeError(SQLModel):
     status_code: int | None = None
     message: str | None = None
     pointer: str | None = None
+    location: str | None = None
     line: str | None = None
     column: str | None = None
 

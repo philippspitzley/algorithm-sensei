@@ -47,7 +47,7 @@ def parse_error(stderr: str) -> CodeError:
     """Parse the stderr output to extract error details."""
 
     # Extract line and column
-    location_match = re.search(r"\(/box/submission/(main.py:(\d?):(\d?))\)", stderr)
+    location_match = re.search(r"\(/box/submission/(main.js:(\d*):(\d*))\)", stderr)
 
     location, line, column = (
         location_match.groups() if location_match else (None, None, None)

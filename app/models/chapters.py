@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
 from pydantic import HttpUrl, model_validator
@@ -41,6 +42,7 @@ class ChapterBase(SQLModel):
     description: str | None = Field(default=None)
     exercise: str | None = Field(default=None, sa_type=Text)
     test_code: str | None = Field(default=None, sa_type=Text)
+    completed: bool = Field(default=False)
 
 
 class ChapterPointBase(SQLModel):
@@ -102,6 +104,7 @@ class ChapterUpdate(SQLModel):
     description: str | None = Field(default=None)
     exercise: str | None = Field(default=None)
     test_code: str | None = Field(default=None)
+    completed: bool | None = Field(default=None)
 
 
 class ChapterPointUpdate(SQLModel):
@@ -125,7 +128,9 @@ class ChapterPointsPublic(SQLModel):
 class ChapterPublic(ChapterBase):
     id: uuid.UUID
     course_id: uuid.UUID
-    points: list[ChapterPointPublic] | None = None  # Field(default_factory=list)
+    points: list[ChapterPointPublic] | None = None
+    created_at: datetime
+    updated_at: datetime
 
 
 class ChaptersPublic(SQLModel):

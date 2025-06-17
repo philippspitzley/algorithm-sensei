@@ -23,6 +23,7 @@ class CodeError(SQLModel):
     type: str | None = None
     status_code: int | None = None
     message: str | None = None
+    error_snippet: str | None = None
     pointer: str | None = None
     location: str | None = None
     line: str | None = None

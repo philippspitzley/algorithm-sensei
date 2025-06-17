@@ -53,6 +53,8 @@ def parse_error(stderr: str) -> CodeError:
         location_match.groups() if location_match else (None, None, None)
     )
 
+    error_snippet = stderr.split("\n")[1]
+
     # Extract pointer (line with the caret)
     pointer_match = re.search(r"(?m)^(\s*\^)\s*$", stderr)
     pointer_line = pointer_match.group(1) if pointer_match else None
@@ -67,6 +69,7 @@ def parse_error(stderr: str) -> CodeError:
     return CodeError(
         type=error_type,
         message=error_message,
+        error_snippet=error_snippet,
         pointer=pointer_line,
         location=location,
         line=line,

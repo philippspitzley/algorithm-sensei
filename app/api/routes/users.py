@@ -29,6 +29,7 @@ from app.models import (
     UserUpdate,
     UserUpdateMe,
 )
+from app.models.chapters import Chapter
 from app.models.courses import Course
 from app.models.user_courses import (
     UserCourse,
@@ -166,7 +167,7 @@ async def get_my_courses(
     return public_user_courses
 
 
-@router.post("/me/courses/{course_id}", response_model=UserCourse)
+@router.post("/me/courses/{course_id}/enroll", response_model=UserCoursePublic)
 async def enroll_course(
     *,
     session: SessionDep,
@@ -197,6 +198,77 @@ async def enroll_course(
     session.refresh(user_course)
 
     return user_course
+
+
+@router.post("/me/chapters/{chapter_id}/complete", response_model=UserCoursePublic)
+async def complete_chapter(
+    *,
+    session: SessionDep,
+    current_user: CurrentUser,
+    chapter_id: uuid.UUID,
+) -> UserCoursePublic:
+    """
+    Complete chapter.
+    """
+
+    # Check if chapter exists
+    chapter = session.get(Chapter, chapter_id)
+    if not chapter:
+        raise ItemNotFoundError(chapter_id, "Chapter")
+
+    # Get user course
+    course_id = chapter.course_id
+    user_course = session.get(
+        UserCourse, {"user_id": current_user.id, "course_id": course_id}
+    )
+
+    # Check if chapter is already completed
+    existing_finished_chapter = session.get(
+        UserCourseFinishedChapter,
+        {
+            "user_course_user_id": current_user.id,
+            "user_course_course_id": course_id,
+            "chapter_id": chapter_id,
+        },
+    )
+
+    if existing_finished_chapter:
+        raise ItemAlreadyExistsError("Chapter completion")
+
+    # Create new finished chapter record
+    new_finished_chapter = UserCourseFinishedChapter(
+        user_course_user_id=current_user.id,
+        user_course_course_id=course_id,
+        chapter_id=chapter_id,
+    )
+
+    session.add(new_finished_chapter)
+    session.commit()
+    session.refresh(user_course)
+
+    return UserCoursePublic.model_validate(user_course)
+
+
+@router.get("/me/chapters/{chapter_id}/isCompleted")
+async def is_chapter_completed(
+    session: SessionDep,
+    chapter_id: uuid.UUID,
+    current_user: CurrentUser,
+) -> dict[str, bool]:
+    """
+    Check if chapter is completed by the current user.
+    """
+
+    user_course_finished_chapter = session.exec(
+        select(UserCourseFinishedChapter).where(
+            UserCourseFinishedChapter.chapter_id == chapter_id,
+            UserCourseFinishedChapter.user_course_user_id == current_user.id,
+        )
+    ).first()
+
+    completed = user_course_finished_chapter is not None
+
+    return {"completed": completed}
 
 
 @router.patch("/me/courses/{course_id}", response_model=UserCourse)

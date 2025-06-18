@@ -19,7 +19,6 @@ from app.models import (
     Message,
 )
 from app.models.courses import Course
-from app.models.user_courses import UserCourseFinishedChapter
 
 router = APIRouter(prefix="/chapters", tags=["chapters"])
 
@@ -86,75 +85,6 @@ async def get_chapter_points_from_chapter(
     ]
 
     return chapter_points
-
-
-@router.get("/{chapter_id}/completed")
-async def is_chapter_completed(
-    session: SessionDep,
-    chapter_id: uuid.UUID,
-    current_user: CurrentUser,
-) -> dict[str, bool]:
-    """
-    Check if chapter is completed by the current user.
-    """
-
-    user_course_finished_chapter = session.exec(
-        select(UserCourseFinishedChapter).where(
-            UserCourseFinishedChapter.chapter_id == chapter_id,
-            UserCourseFinishedChapter.user_course_user_id == current_user.id,
-        )
-    ).first()
-
-    completed = user_course_finished_chapter is not None
-
-    return {"completed": completed}
-
-
-@router.post("/{chapter_id}/completed")
-async def complete_chapter(
-    session: SessionDep,
-    course_id: uuid.UUID,
-    chapter_id: uuid.UUID,
-    current_user: CurrentUser,
-) -> Message:
-    """
-    Set chapter to completed.
-    """
-
-    # check if chapter exists
-    chapter = session.get(Chapter, chapter_id)
-    if not chapter:
-        raise ItemNotFoundError(item_id=chapter_id, item_name="Chapter")
-
-    # check if course exists
-    course = session.get(Course, course_id)
-    if not course:
-        raise ItemNotFoundError(item_id=course_id, item_name="Course")
-
-    # check if user has already completed the chapter
-    user_course_finished_chapter = session.exec(
-        select(UserCourseFinishedChapter).where(
-            UserCourseFinishedChapter.chapter_id == chapter_id,
-            UserCourseFinishedChapter.user_course_user_id == current_user.id,
-        )
-    ).first()
-
-    if user_course_finished_chapter:
-        raise ItemAlreadyExistsError(
-            item_name=f"Chapter {chapter_id} by user {current_user.id}"
-        )
-
-    # create new user_course_finished_chapter
-    new_user_course_finished_chapter = UserCourseFinishedChapter(
-        user_course_user_id=current_user.id,
-        user_course_course_id=course_id,
-        chapter_id=chapter_id,
-    )
-
-    session.add(new_user_course_finished_chapter)
-    session.commit()
-
-    return Message(message=f"Chapter with id '{chapter_id}' is set to completed!")
 
 
 @router.post("/{course_id}", response_model=ChapterPublic)

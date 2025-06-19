@@ -15,7 +15,7 @@ class HintRequest(BaseModel):
     test_cases: str
     error: str | None = None
     difficulty_level: Difficulty = Difficulty.BEGINNER
-    previous_hints: list[str] = []
+    previous_hints: list["HintResponse"] = []
 
 
 class HintResponse(BaseModel):

@@ -39,6 +39,13 @@ async def generate_hint(request: HintRequest) -> HintResponse:
     """Generate a contextual hint based on the request."""
     with logfire.span("generate_hint"):
         try:
+            # Convert previous hints to JSON strings
+            previous_hints_str = (
+                [hint.model_dump_json() for hint in request.previous_hints]
+                if request.previous_hints
+                else []
+            )
+
             # Create the prompt with context
             prompt = f"""
             Exercise: {request.exercise_description}
@@ -55,7 +62,7 @@ async def generate_hint(request: HintRequest) -> HintResponse:
             
             Student difficulty level: {request.difficulty_level}
             Previous hints given: {len(request.previous_hints)}
-            {f"Previous hints were: {'; '.join(request.previous_hints)}" if request.previous_hints else ""}
+            {f"Previous hints were: {'; '.join(previous_hints_str)}" if request.previous_hints else ""}
 
             {f"Running the user code resulted in an error: {request.error}" if request.error else ""}
 

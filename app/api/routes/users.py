@@ -1,3 +1,4 @@
+import math
 import uuid
 
 from fastapi import APIRouter
@@ -247,6 +248,41 @@ async def complete_chapter(
     session.refresh(user_course)
 
     return UserCoursePublic.model_validate(user_course)
+
+
+@router.patch("/me/course/{course_id}/updateProgress", response_model=UserCoursePublic)
+async def update_my_chapter_progress(
+    *, session: SessionDep, course_id: uuid.UUID, current_user: CurrentUser
+) -> UserCourse:
+    """
+    Calculate user progress depending on current chapter quantity.
+    """
+
+    # Get all chapters from course
+    course = session.get(Course, course_id)
+    if not course:
+        raise ItemNotFoundError(course_id, "Course")
+    chapters = course.chapters
+
+    # Get user course
+    user_course = session.get(
+        UserCourse, {"user_id": current_user.id, "course_id": course_id}
+    )
+    if not user_course:
+        raise ItemNotFoundError(course_id, "User Course")
+
+    # Calculate new user course progress
+    finished_chapters_len = len(user_course.finished_chapters)
+    chapters_len = len(chapters)
+    new_progress = math.ceil((finished_chapters_len) / chapters_len * 100)
+
+    # Update user course progress
+    user_course.progress = new_progress
+
+    session.commit()
+    session.refresh(user_course)
+
+    return user_course
 
 
 @router.get("/me/chapters/{chapter_id}/isCompleted")

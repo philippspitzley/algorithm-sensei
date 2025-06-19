@@ -271,7 +271,7 @@ async def is_chapter_completed(
     return {"completed": completed}
 
 
-@router.patch("/me/courses/{course_id}", response_model=UserCourse)
+@router.patch("/me/courses/{course_id}", response_model=UserCoursePublic)
 async def update_my_course(
     *,
     session: SessionDep,

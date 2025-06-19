@@ -2,6 +2,8 @@ import uuid
 from typing import TYPE_CHECKING, Any
 
 from pydantic import HttpUrl, model_validator
+from sqlalchemy import Connection, event, update
+from sqlalchemy.orm import Mapper
 from sqlalchemy.types import String, TypeDecorator
 from sqlmodel import Field, Relationship, SQLModel, Text
 
@@ -36,7 +38,6 @@ class HttpUrlType(TypeDecorator[HttpUrl]):
 
 # Shared required properties
 class ChapterBase(SQLModel):
-    chapter_num: int = Field(ge=1)
     title: str = Field(min_length=1, max_length=255)
     description: str | None = Field(default=None)
     exercise: str | None = Field(default=None, sa_type=Text)
@@ -55,10 +56,27 @@ class ChapterPointBase(SQLModel):
 class Chapter(TimeStampMixin, ChapterBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     course_id: uuid.UUID = Field(foreign_key="course.id", nullable=False)
+    chapter_num: int = Field(ge=1)
 
     # Relationships
     course: "Course" = Relationship(back_populates="chapters")
     points: list["ChapterPoint"] = Relationship(back_populates="chapter")
+
+
+# Event listener for automatic renumbering after deletion
+@event.listens_for(Chapter, "after_delete")
+def renumber_chapters_after_delete(
+    mapper: Mapper[Chapter], connection: Connection, target: Chapter
+):
+    """Automatically renumber chapters after one is deleted"""
+    connection.execute(
+        update(Chapter.__table__)  # type: ignore[attr-defined]
+        .where(
+            Chapter.__table__.c.course_id == target.course_id,  # type: ignore[attr-defined]
+            Chapter.__table__.c.chapter_num > target.chapter_num,  # type: ignore[attr-defined]
+        )
+        .values(chapter_num=Chapter.__table__.c.chapter_num - 1)  # type: ignore[attr-defined]
+    )
 
 
 class ChapterPoint(TimeStampMixin, ChapterPointBase, table=True):
@@ -97,7 +115,6 @@ class ChapterPointCreate(ChapterPointBase):
 
 
 class ChapterUpdate(SQLModel):
-    chapter_num: int | None = Field(default=None, ge=1)
     title: str | None = Field(default=None, min_length=1, max_length=255)
     description: str | None = Field(default=None)
     exercise: str | None = Field(default=None)
@@ -125,6 +142,7 @@ class ChapterPointsPublic(SQLModel):
 class ChapterPublic(ChapterBase):
     id: uuid.UUID
     course_id: uuid.UUID
+    chapter_num: int
     points: list[ChapterPointPublic] | None = None  # Field(default_factory=list)
 
 

@@ -5,7 +5,6 @@ from sqlmodel import func, select
 
 from app.api.deps import CurrentUser, PaginationParams, SessionDep
 from app.api.exceptions import (
-    ItemAlreadyExistsError,
     ItemNotFoundError,
     PermissionDeniedError,
 )
@@ -94,36 +93,34 @@ async def create_chapter(
     current_user: CurrentUser,
     chapter_in: ChapterCreate,
     course_id: uuid.UUID,
-) -> ChapterPublic:
+) -> Chapter:
     """
     Create new chapter.
     """
+
+    if not current_user.is_superuser:
+        raise PermissionDeniedError()
 
     # check if course exists
     course = session.get(Course, course_id)
     if not course:
         raise ItemNotFoundError(item_id=course_id, item_name="Course")
 
-    # check if chapter_num already exists
-    chapter_num = chapter_in.chapter_num
-    chapter_nums = [chapter.chapter_num for chapter in course.chapters]
-    if chapter_num in chapter_nums:
-        raise ItemAlreadyExistsError(item_name=f"Chapter {chapter_num}")
+    count_statement = (
+        select(func.count()).select_from(Chapter).where(Chapter.course_id == course_id)
+    )
+    chapter_count = session.scalar(count_statement) or 0
 
-    if not current_user.is_superuser:
-        raise PermissionDeniedError()
-
-    course = session.get(Course, course_id)
-    if not course:
-        raise ItemNotFoundError(item_id=course_id, item_name="Course")
-
-    chapter = Chapter.model_validate(chapter_in, update={"course_id": course_id})
+    chapter = Chapter(
+        **chapter_in.model_dump(),
+        chapter_num=chapter_count + 1,
+        course_id=course_id,
+    )
 
     session.add(chapter)
     session.commit()
-    session.refresh(chapter)
 
-    return ChapterPublic.model_validate(chapter)
+    return chapter
 
 
 @router.patch("/{chapter_id}", response_model=ChapterPublic)

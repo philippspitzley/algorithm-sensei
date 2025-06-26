@@ -22,26 +22,26 @@ dependencies = [
 
 [tool.ruff]
 # General settings
-target-version = "py311" # Match your Python version
+target-version = "py313" # Match your Python version
 line-length = 88         # 88 (Black default) or 100/120 for wider lines
 respect-gitignore = true
 
 # Linting rulesets (autofixable + best practices)
 lint.select = [
-  "E",   # pycodestyle
-  "F",   # pyflakes
-  "I",   # isort
-  "B",   # flake8-bugbear
-  "UP",  # pyupgrade (use modern Python syntax)
-  "N",   # pep8-naming
+  "E",
+  "F",
+  "I",
+  "B",
+  "UP",
+  "N",
   "C4",  # flake8-comprehensions
-  "SIM", # flake8-simplify
-  "TID", # tidy imports
+  "SIM",
+  "TID",
   "A",   # builtins checks (e.g. avoid shadowing `id`, `list`, etc.)
 ]
 
 lint.ignore = [
-  "E501", # Line length (handled by formatter)
+  "E501",
   "B904",
   # "TID252",
 ]

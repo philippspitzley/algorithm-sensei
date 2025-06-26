@@ -49,6 +49,8 @@ __all__ = [
     # AI models
     "HintResponse",
     "HintRequest",
+    # Stats models
+    "Stats",
 ]
 
 # Import and re-export all models to avoid circular imports
@@ -85,6 +87,9 @@ from .courses import (
     CoursesPublic,
     CourseUpdate,
 )
+
+# Stats models
+from .stats import Stats
 
 # UserCourse models
 from .user_courses import (

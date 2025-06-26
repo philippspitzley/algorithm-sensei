@@ -5,7 +5,7 @@ class Code(SQLModel):
     signal: str | None = None
     stdout: str = ""
     stderr: str = ""
-    code: int = 0
+    code: int | None = 0
     output: str = ""
     memory: int = 0
     message: str | None = None

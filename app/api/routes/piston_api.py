@@ -38,7 +38,8 @@ async def execute_code(request: CodeRequest) -> CodeResponse:
     if run_res and run_res.stderr:
         error = parse_error(run_res.stderr)
 
-        return CodeResponse(compile=compile_res, run=run_res, error=error)
+    elif compile_res and compile_res.stderr:
+        error = parse_error(compile_res.stderr)
 
     return CodeResponse(compile=data.compile, run=data.run, error=error)
 

@@ -58,6 +58,11 @@ async def register_user(session: SessionDep, user_in: UserRegister) -> UserPubli
     if user:
         raise EmailValidationError(detail=f"Email '{user_in.email}' already exists")
 
+    statement = select(User).where(User.user_name == user_in.user_name)
+    existing_user_name = session.exec(statement).first()
+    if existing_user_name:
+        raise ItemAlreadyExistsError(item_name="User name")
+
     user_create = UserCreate.model_validate(user_in)
     user = crud.create_user(session=session, user_create=user_create)
 

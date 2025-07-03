@@ -103,47 +103,49 @@ Algorithm Sensei Backend is a comprehensive FastAPI-based API that powers an alg
 
    Follow the instructions from the [Piston API documentation](https://github.com/engineer-man/piston?tab=readme-ov-file#getting-started)
 
-   > [!IMPORTANT]
-   > Do not forget to [install](https://github.com/engineer-man/piston?tab=readme-ov-file#cli) the javascript runtime for the Piston API to support JavaScript code execution.
-
-   > [!TIP]
-   > to raise the limits for output and execution time, you can use the following docker configuration before composing up:
-
-   ```bash
-   # Create docker-compose.yaml for Piston API
-   cat > docker-compose.yaml << 'EOF'
-   version: '3.2'
-
-   services:
-       api:
-           image: ghcr.io/engineer-man/piston
-           container_name: piston_api
-           environment:
-               - PISTON_OUTPUT_MAX_SIZE=50000000
-               - PISTON_RUN_OUTPUT_MAX_SIZE=50000000
-               - PISTON_COMPILE_OUTPUT_MAX_SIZE=50000000
-               - PISTON_CPU_TIME_LIMIT=15000
-               - PISTON_WALL_TIME_LIMIT=20000
-           restart: always
-           privileged: true
-           ports:
-               - 2000:2000
-           volumes:
-               - ./data/piston/packages:/piston/packages
-           tmpfs:
-               - /tmp:exec
-   EOF
-   ```
-
-   ```bash
-   # Start Piston API
-   docker compose up -d
-   ```
-
    ```bash
    # Update your .env file
    PISTON_API_URL=http://localhost:2000/api/v2/piston
    ```
+
+> [!IMPORTANT]
+> Do not forget to [install](https://github.com/engineer-man/piston?tab=readme-ov-file#cli) the javascript runtime for the Piston API to support JavaScript code execution.
+
+<br>
+
+> [!TIP]
+> To raise the limits for output and execution time, you can use the following docker configuration before composing up:
+>
+> 1. Create docker-compose.yaml for Piston API:
+>  ```yaml
+>   cat > docker-compose.yaml << 'EOF'
+>   version: '3.2'
+>
+>   services:
+>       api:
+>           image: ghcr.io/engineer-man/piston
+>           container_name: piston_api
+>           environment:
+>               - PISTON_OUTPUT_MAX_SIZE=50000000
+>               - PISTON_RUN_OUTPUT_MAX_SIZE=50000000
+>               - PISTON_COMPILE_OUTPUT_MAX_SIZE=50000000
+>               - PISTON_CPU_TIME_LIMIT=15000
+>               - PISTON_WALL_TIME_LIMIT=20000
+>           restart: always
+>           privileged: true
+>           ports:
+>               - 2000:2000
+>           volumes:
+>               - ./data/piston/packages:/piston/packages
+>           tmpfs:
+>               - /tmp:exec
+>   EOF
+>   ```
+>
+> 2. Start Piston API
+>   ```bash
+>   docker compose up -d
+>   ```
 
 5. **Set up database**
 

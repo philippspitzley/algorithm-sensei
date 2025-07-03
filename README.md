@@ -101,6 +101,14 @@ Algorithm Sensei Backend is a comprehensive FastAPI-based API that powers an alg
 
    #### Option B: Self-Host Piston API with Docker Compose
 
+   Follow the instructions from the [Piston API documentation](https://github.com/engineer-man/piston?tab=readme-ov-file#getting-started)
+
+   > [!IMPORTANT]
+   > Do not forget to [install](https://github.com/engineer-man/piston?tab=readme-ov-file#cli) the javascript runtime for the Piston API to support JavaScript code execution.
+
+   > [!TIP]
+   > to raise the limits for output and execution time, you can use the following docker configuration before composing up:
+
    ```bash
    # Create docker-compose.yaml for Piston API
    cat > docker-compose.yaml << 'EOF'
@@ -125,10 +133,14 @@ Algorithm Sensei Backend is a comprehensive FastAPI-based API that powers an alg
            tmpfs:
                - /tmp:exec
    EOF
+   ```
 
+   ```bash
    # Start Piston API
    docker compose up -d
+   ```
 
+   ```bash
    # Update your .env file
    PISTON_API_URL=http://localhost:2000/api/v2/piston
    ```
@@ -158,7 +170,8 @@ Algorithm Sensei Backend is a comprehensive FastAPI-based API that powers an alg
    - **Interactive Docs**: http://localhost:8000/docs
    - **ReDoc**: http://localhost:8000/redoc
 
-> **Note**: Make sure the [Algorithm Samurai Frontend](https://github.com/philippspitzley/algorithm-samurai.git) is set up to connect to this backend.
+> [!NOTE]
+> Make sure the [Algorithm Samurai Frontend](https://github.com/philippspitzley/algorithm-samurai.git) is set up to connect to this backend.
 
 ### Development Scripts
 

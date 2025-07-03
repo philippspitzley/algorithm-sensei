@@ -1,118 +1,223 @@
-# Algorithm Learning Platform - Backend API
+# Algorithm Sensei Backend 🥷
 
-A comprehensive FastAPI-based backend for an algorithm learning platform that provides interactive coding exercises, AI-powered tutoring, and progress tracking for students learning algorithms and data structures.
+<div align="center">
+  
+  <h2>FastAPI backend for a code learning platform</h2>
+  
+  [![Python](https://img.shields.io/badge/Python-3.13-4886B9.svg)](https://python.org/)
+  [![FastAPI](https://img.shields.io/badge/FastAPI-0.115.6-029485.svg)](https://fastapi.tiangolo.com/)
+  [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-336791.svg)](https://postgresql.org/)
+  [![SQLModel](https://img.shields.io/badge/SQLModel-0.0.24-7E56C2.svg)](https://sqlmodel.tiangolo.com/)
+  [![Pydantic-AI](https://img.shields.io/badge/PydanticAI-0.2.17-E92063.svg)](https://sqlmodel.tiangolo.com/)
+  [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+</div>
 
-## 🚀 Features
+## 📋 Table of Contents
 
-- **User Management**: Registration, authentication, and profile management
-- **Course System**: Structured algorithm courses with chapters and learning points
-- **Interactive Coding**: Code execution environment with multiple language support
-- **AI Tutor**: Intelligent hints and guidance powered by Pydantic AI
-- **Progress Tracking**: Chapter completion and learning analytics
-- **Rate Limiting**: API protection with request throttling
+- [🌟 Overview](#-overview)
+- [✨ Key Features](#-key-features)
+- [🚀 Getting Started](#-getting-started)
+- [🏗️ Project Structure](#️-project-structure)
+- [🛠️ Technology Stack](#️-technology-stack)
+- [⚙️ Configuration](#️-configuration)
+- [🗄️ Database Management](#️-database-management)
+- [🔒 Security Features](#-security-features)
+- [📝 License](#-license)
+
+## 🌟 Overview
+
+Algorithm Sensei Backend is a comprehensive FastAPI-based API that powers an algorithm learning platform. This backend provides the foundation for interactive coding exercises, AI-powered tutoring, and structured learning paths. It works together with the [Algorithm Samurai Frontend](https://github.com/philippspitzley/algorithm-samurai.git) to deliver a complete learning experience with real-time code execution, intelligent hints, and secure user management.
+
+## ✨ Key Features
+
+- **RESTful API**: Clean, well-documented endpoints with automatic OpenAPI generation
+- **User Management**: Complete authentication system with JWT tokens and HTTP-only cookies
+- **Course System**: Structured algorithm courses with chapter-based organization
+- **Code Execution**: Secure multi-language code execution via Piston API integration
+- **Progress Tracking**: Comprehensive analytics and learning journey monitoring
+
+<br>
+
+- **Rate Limiting**: API protection with configurable request throttling
+- **Monitoring**: Integrated observability with Logfire
 - **Admin Panel**: Course and user administration capabilities
+- **Database Migrations**: Version-controlled schema management with Alembic
 
-## 🛠 Tech Stack
+### 🤖 AI Integration
 
-- **Framework**: [FastAPI](https://fastapi.tiangolo.com/) - Modern, fast web framework
-- **Database**: [PostgreSQL](https://www.postgresql.org/) with [SQLModel](https://sqlmodel.tiangolo.com/)
-- **Authentication**: JWT tokens with HTTP-only cookies
-- **Migrations**: [Alembic](https://alembic.sqlalchemy.org/) for database schema management
-- **AI Integration**: [Pydantic AI](https://ai.pydantic.dev/) for intelligent tutoring
-- **Code Execution**: [Piston API](https://piston.readthedocs.io/) integration
-- **Monitoring**: [Logfire](https://logfire.pydantic.dev/) for observability
-- **Package Management**: [uv](https://docs.astral.sh/uv/) for fast Python package management
+- **Intelligent Tutoring**: Context-aware hints and explanations powered by Pydantic AI
+- **Error Analysis**: Detailed feedback on code execution and compilation issues
+- **Personalized Learning**: Adaptive difficulty and content recommendations
 
-## 📋 Prerequisites
+## 🚀 Getting Started
+
+### Prerequisites
 
 - **Python**: 3.13 or higher
 - **PostgreSQL**: 12 or higher
 - **uv**: Python package manager ([installation guide](https://docs.astral.sh/uv/getting-started/installation/))
+- **Frontend**: This backend works with the [Algorithm Samurai Frontend](https://github.com/philippspitzley/algorithm-samurai.git)
 
-## 🔧 Installation & Setup
+### Installation
 
-### 1. Clone the Repository
+1. **Clone the repository**
 
-```bash
-git clone https://github.com/philippspitzley/algorithm-sensei.git
-cd backend
+   ```bash
+   git clone https://github.com/philippspitzley/algorithm-sensei.git
+   cd backend
+   ```
+
+2. **Install dependencies**
+
+   ```bash
+   # Install uv if you haven't already:
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+
+   # Install project dependencies
+   uv sync
+   ```
+
+3. **Set up environment variables**
+
+   Create a `.env` file in the project root (backend folder):
+
+   ```bash
+   # Copy the sample environment file
+   cp .env.sample .env
+   ```
+
+   Then edit the `.env` file and fill in your actual values:
+
+   - **Database credentials**: Update `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB`
+   - **Secret key**: Generate a secure secret key for JWT tokens
+   - **AI configuration**: Add your Gemini API key and Logfire token (optional)
+   - **Piston API**: Keep the default public API URL or update for self-hosted setup
+
+4. **Set up Piston API (Code Execution)**
+
+   #### Option A: Use Public Piston API
+
+   No additional setup required. The public API is already configured in the `.env` file.
+
+   #### Option B: Self-Host Piston API with Docker Compose
+
+   ```bash
+   # Create docker-compose.yaml for Piston API
+   cat > docker-compose.yaml << 'EOF'
+   version: '3.2'
+
+   services:
+       api:
+           image: ghcr.io/engineer-man/piston
+           container_name: piston_api
+           environment:
+               - PISTON_OUTPUT_MAX_SIZE=50000000
+               - PISTON_RUN_OUTPUT_MAX_SIZE=50000000
+               - PISTON_COMPILE_OUTPUT_MAX_SIZE=50000000
+               - PISTON_CPU_TIME_LIMIT=15000
+               - PISTON_WALL_TIME_LIMIT=20000
+           restart: always
+           privileged: true
+           ports:
+               - 2000:2000
+           volumes:
+               - ./data/piston/packages:/piston/packages
+           tmpfs:
+               - /tmp:exec
+   EOF
+
+   # Start Piston API
+   docker compose up -d
+
+   # Update your .env file
+   PISTON_API_URL=http://localhost:2000/api/v2/piston
+   ```
+
+5. **Set up database**
+
+   ```bash
+   # Start PostgreSQL service (macOS with Homebrew)
+   brew services start postgresql
+
+   # Create database
+   createdb algorithm_learning_db
+
+   # Run database migrations
+   uv run alembic upgrade head
+   ```
+
+6. **Start the development server**
+
+   ```bash
+   # Start the FastAPI development server
+   uv run fastapi dev app/main.py
+   ```
+
+7. **Open your browser**
+   - **API Base URL**: http://localhost:8000
+   - **Interactive Docs**: http://localhost:8000/docs
+   - **ReDoc**: http://localhost:8000/redoc
+
+> **Note**: Make sure the [Algorithm Samurai Frontend](https://github.com/philippspitzley/algorithm-samurai.git) is set up to connect to this backend.
+
+### Development Scripts
+
+| Command                     | Description               |
+| --------------------------- | ------------------------- |
+| `uv run fastapi dev`        | Start development server  |
+| `uv run alembic upgrade`    | Apply database migrations |
+| `uv run ruff check`         | Run linting               |
+| `uv run ruff format`        | Format code               |
+| `uv run pre-commit install` | Install git hooks         |
+
+## 🏗️ Project Structure
+
+```
+backend/
+├── app/
+│   ├── api/                 # API routes and dependencies
+│   │   ├── routes/         # Individual route modules
+│   │   ├── deps.py         # Dependency injection
+│   │   └── exceptions.py   # Custom exception handlers
+│   ├── core/               # Core functionality
+│   │   ├── config.py       # Application settings
+│   │   ├── db.py          # Database connection
+│   │   └── security.py    # Authentication utilities
+│   ├── models/             # Pydantic/SQLModel models
+│   ├── services/           # Business logic services
+│   ├── alembic/           # Database migrations
+│   └── main.py            # FastAPI application entry point
+├── pyproject.toml         # Project dependencies
+└── alembic.ini           # Migration configuration
 ```
 
-### 2. Install Dependencies
+## 🛠️ Technology Stack
 
-```bash
-# Install uv if you haven't already: 
-curl -LsSf https://astral.sh/uv/install.sh | sh
+### Backend Framework
 
+- **[FastAPI](https://fastapi.tiangolo.com/)** - Modern, fast web framework for building APIs
+- **[SQLModel](https://sqlmodel.tiangolo.com/)** - SQL databases with Python type annotations
+- **[Pydantic](https://pydantic.dev/)** - Data validation and settings management
+- **[Alembic](https://alembic.sqlalchemy.org/)** - Database schema migration tool
 
-# Install project dependencies
-uv sync
-```
+### Database & Authentication
 
-### 3. Environment Configuration
+- **[PostgreSQL](https://www.postgresql.org/)** - Robust relational database
+- **[JWT Tokens](https://jwt.io/)** - Secure authentication with HTTP-only cookies
+- **[Bcrypt](https://pypi.org/project/bcrypt/)** - Password hashing for security
 
-Create a `.env` file in the project root (backend folder):
+### AI & Code Execution
 
-```bash
-# Database Configuration
-POSTGRES_SERVER=localhost
-POSTGRES_PORT=5432
-POSTGRES_USER=your_username
-POSTGRES_PASSWORD=your_password
-POSTGRES_DB=algorithm_learning_db
+- **[Pydantic AI](https://ai.pydantic.dev/)** - Intelligent tutoring and hint generation
+- **[Piston API](https://github.com/engineer-man/piston)** - Secure multi-language code execution
+- **[Gemini AI](https://ai.google.dev/)** - Advanced AI capabilities
 
-# Application Settings
-PROJECT_NAME="Algorithm Learning Platform API"
-SECRET_KEY=your-super-secret-key-here
-ACCESS_TOKEN_EXPIRE_MINUTES=11520  # 8 days
-ENVIRONMENT=local
+### Monitoring & Development
 
-# Frontend Configuration
-FRONTEND_HOST=http://localhost:5173
-BACKEND_CORS_ORIGINS=http://localhost:5173,http://localhost:3000
-
-# AI Configuration (Optional)
-OPENAI_API_KEY=your-gemini-api-key
-LOGFIRE_TOKEN=your-logfire-token
-
-# Piston API (Code Execution)
-# You can self host Piston API with docker or use the public API
-PISTON_API_URL=https://emkc.org/api/v2/piston
-
-```
-
-### 4. Database Setup
-
-```bash
-# Start PostgreSQL service (macOS with Homebrew)
-brew services start postgresql
-
-# Create database
-createdb algorithm_learning_db
-
-# Run database migrations
-uv run alembic upgrade head
-```
-
-### 5. Initialize Sample Data (Optional)
-
-```bash
-# Create initial admin user and sample courses
-uv run python -c "from app.initial_data import init; init()"
-```
-
-### 6. Run the Development Server
-
-```bash
-# Start the FastAPI development server
-uv run fastapi dev app/main.py
-```
-
-The API will be available at:
-
-- **API Base URL**: http://localhost:8000
-- **Interactive Docs**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
+- **[Logfire](https://logfire.pydantic.dev/docs/)** - Observability and performance monitoring
+- **[uv](https://docs.astral.sh/uv/)** - Fast Python package management
+- **[Ruff](https://docs.astral.sh/ruff/)** - Code linting and formatting
+- **[Pre-commit](https://pre-commit.com/)** - Git hooks for quality assurance
 
 ## ⚙️ Configuration
 
@@ -152,98 +257,6 @@ createdb algorithm_learning_db
 uv run alembic upgrade head
 ```
 
-## 📚 API Documentation
-
-### Available Endpoints
-
-The API provides the following main endpoint groups:
-
-#### Authentication
-
-- `POST /api/v1/login/access-token` - User login
-- `POST /api/v1/users/signup` - User registration
-
-#### Users
-
-- `GET /api/v1/users/me` - Get current user profile
-- `GET /api/v1/users/me/courses` - Get enrolled courses
-- `POST /api/v1/users/me/courses/{course_id}/enroll` - Enroll in course
-
-#### Courses & Chapters
-
-- `GET /api/v1/courses` - List all courses
-- `GET /api/v1/courses/{course_id}` - Get course details
-- `GET /api/v1/chapters` - List chapters
-- `GET /api/v1/chapters/{chapter_id}` - Get chapter details
-
-#### AI Tutor
-
-- `POST /api/v1/ai/generate` - Get AI-powered hints
-- `GET /api/v1/ai/health` - AI service health check
-
-#### Code Execution
-
-- `POST /api/v1/piston/execute` - Execute code snippets
-
-#### Statistics
-
-- `GET /api/v1/stats` - Get platform statistics
-
-### Authentication
-
-The API uses JWT tokens with HTTP-only cookies for authentication. After login, the token is automatically included in requests.
-
-Example login request:
-
-```bash
-curl -X POST "http://localhost:8000/api/v1/login/access-token" \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "username=user@example.com&password=yourpassword"
-```
-
-## 🏗️ Development
-
-### Project Structure
-
-```
-backend/
-├── app/
-│   ├── api/                 # API routes and dependencies
-│   │   ├── routes/         # Individual route modules
-│   │   ├── deps.py         # Dependency injection
-│   │   └── exceptions.py   # Custom exception handlers
-│   ├── core/               # Core functionality
-│   │   ├── config.py       # Application settings
-│   │   ├── db.py          # Database connection
-│   │   └── security.py    # Authentication utilities
-│   ├── models/             # Pydantic/SQLModel models
-│   ├── services/           # Business logic services
-│   ├── alembic/           # Database migrations
-│   └── main.py            # FastAPI application entry point
-├── pyproject.toml         # Project dependencies
-└── alembic.ini           # Migration configuration
-```
-
-### Code Quality
-
-The project includes pre-commit hooks and linting:
-
-```bash
-# Install pre-commit hooks
-uv run pre-commit install
-
-# Run linting manually
-uv run ruff check .
-uv run ruff format .
-```
-
-### Testing
-
-```bash
-# Run tests (when implemented)
-uv run pytest
-```
-
 ## 🔒 Security Features
 
 - **JWT Authentication**: Secure token-based authentication
@@ -253,33 +266,12 @@ uv run pytest
 - **Password Hashing**: Bcrypt for secure password storage
 - **Input Validation**: Pydantic models for data validation
 
-## 📈 Monitoring & Observability
-
-The application includes integrated monitoring with Logfire. By default it is only used for the AI tutor, but can be extended to other parts of the application.
-
-```python
-# Monitoring is configured in app/main.py
-logfire.configure(token=settings.LOGFIRE_TOKEN)
-```
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Run tests and linting
-5. Commit your changes (`git commit -m 'Add amazing feature'`)
-6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
-
-## 📄 License
+## 📝 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🆘 Support
-
-For support, please open an issue in the GitHub repository or contact the development team.
-
 ---
 
-**Note**: This backend is based on the [full-stack-fastapi-template](https://github.com/fastapi/full-stack-fastapi-template) and has been customized for algorithm learning platform requirements.
+<div align="center">
+  <p>Built with ❤️</p>
+</div>
